@@ -37,7 +37,7 @@ Contiene los distintos microservicios:
 
 ---
 
-## 🚀 Guía de Instalación Paso a Paso
+## Guía de Instalación Paso a Paso
 
 Para desplegar el ecosistema desde cero, dispones de dos enfoques: usar el asistente automático o hacerlo manualmente.
 
