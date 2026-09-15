@@ -1,0 +1,27 @@
+# Entorno y variables secretas
+.env
+*.env
+config/config.yaml
+
+# Archivos de registro y copias de seguridad
+*.log
+backups/
+
+# Archivos compilados de Python y entornos virtuales
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ENV/
+
+# Configuración de editores / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db

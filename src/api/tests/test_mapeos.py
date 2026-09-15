@@ -1,0 +1,115 @@
+import os
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+
+from app.main import app
+from app.db import get_session, Base
+
+engine = create_engine(
+    "sqlite://", 
+    connect_args={"check_same_thread": False}, 
+    poolclass=StaticPool
+)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def override_get_session():
+    try:
+        db = TestingSessionLocal()
+        yield db
+    finally:
+        db.close()
+
+@pytest.fixture(autouse=True)
+def apply_override():
+    app.dependency_overrides[get_session] = override_get_session
+    yield
+    del app.dependency_overrides[get_session]
+
+@pytest.fixture(name="client")
+def client_fixture():
+    os.environ["MAPEO_API_TOKEN"] = "test_token"
+    Base.metadata.create_all(bind=engine)
+    client = TestClient(app)
+    yield client
+    Base.metadata.drop_all(bind=engine)
+    try:
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
+            conn.commit()
+    except Exception:
+        pass
+
+def test_create_and_read_mapeo(client: TestClient):
+    headers = {"Authorization": "Bearer test_token"}
+    
+    response = client.post("/mapeos", json={
+        "moodle_user_id": 10,
+        "moodle_course_id": 5,
+        "repo_url": "https://github.com/user/fork1",
+        "matrix_room_id": "!room1:matrix.org"
+    }, headers=headers)
+    assert response.status_code == 201
+    
+    response = client.get("/mapeos?moodle_user_id=10&moodle_course_id=5", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["matrix_room_id"] == "!room1:matrix.org"
+    
+def test_read_nonexistent_returns_404(client: TestClient):
+    headers = {"Authorization": "Bearer test_token"}
+    response = client.get("/mapeos?moodle_user_id=99&moodle_course_id=99", headers=headers)
+    assert response.status_code == 404
+
+def test_same_user_different_courses(client: TestClient):
+    headers = {"Authorization": "Bearer test_token"}
+    client.post("/mapeos", json={
+        "moodle_user_id": 15,
+        "moodle_course_id": 1,
+        "repo_url": "url1",
+        "matrix_room_id": "room1"
+    }, headers=headers)
+    
+    response = client.post("/mapeos", json={
+        "moodle_user_id": 15,
+        "moodle_course_id": 2,
+        "repo_url": "url2",
+        "matrix_room_id": "room2"
+    }, headers=headers)
+    assert response.status_code == 201
+    
+    response = client.post("/mapeos", json={
+        "moodle_user_id": 15,
+        "moodle_course_id": 2,
+        "repo_url": "url3",
+        "matrix_room_id": "room3"
+    }, headers=headers)
+    assert response.status_code == 409
+
+def test_read_moodle_username_filter(client: TestClient):
+    headers = {"Authorization": "Bearer test_token"}
+    client.post("/mapeos", json={
+        "moodle_user_id": 100,
+        "moodle_course_id": 1,
+        "repo_url": "url",
+        "matrix_room_id": "room_a",
+        "moodle_username": "student_alpha"
+    }, headers=headers)
+    
+    client.post("/mapeos", json={
+        "moodle_user_id": 101,
+        "moodle_course_id": 1,
+        "repo_url": "url",
+        "matrix_room_id": "room_b",
+        "moodle_username": "student_beta"
+    }, headers=headers)
+
+    response = client.get("/mapeos?moodle_username=student_alpha", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["moodle_username"] == "student_alpha"
