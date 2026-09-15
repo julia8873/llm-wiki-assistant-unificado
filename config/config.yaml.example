@@ -68,18 +68,18 @@ git:
     # Esto le otorga permisos de lectura/escritura de código, crear repositorios
     # a partir de la plantilla y añadir a los alumnos como colaboradores.
     # Genera uno en: https://github.com/settings/tokens
-    pat: "CHANGE_ME"
+    pat: "changeme"
     pat_env_var: "GITHUB_PAT"
 
   gitlab:
     api_base_url: "https://gitlab.com/api/v4"
     token_env_var: "GITLAB_TOKEN"
     # Nombre del grupo de GitLab donde se crearán los repos
-    grupo_destino: "CHANGE_ME"
+    grupo_destino: "changeme"
 
   self_hosted:
     # URL base de tu instancia autoalojada (ej. Gitea, Forgejo, GitLab CE)
-    api_base_url: "CHANGE_ME"
+    api_base_url: "changeme"
     token_env_var: "GIT_SELF_HOSTED_TOKEN"
 
 llm:
@@ -88,7 +88,7 @@ llm:
 
   openai:
     modelo_defecto: "gpt-4o-mini"
-    api_key: "API_KEY_CHANGE_ME"
+    api_key: "API_KEY_changeme"
     api_key_env_var: "OPENAI_API_KEY"
     api_base_url: "https://api.openai.com/v1"
     temperatura: 0.2
@@ -98,7 +98,7 @@ llm:
 
   gemini:
     modelo_defecto: "gemini-3.5-flash"
-    api_key: "API_KEY_CHANGE_ME"
+    api_key: "API_KEY_changeme"
     api_key_env_var: "GEMINI_API_KEY"
     api_base_url: "https://generativelanguage.googleapis.com/v1beta"
     temperatura: 0.2
@@ -109,7 +109,7 @@ llm:
   ollama:
     modelo_defecto: "qwen3.6:35b-a3b"
     modelo_embedding: "nomic-embed-text"
-    api_base_url: "CHANGE_ME"
+    api_base_url: "changeme"
     api_key_env_var: "OLLAMA_API_KEY_DUMMY"
     api_key: "ollama"
     temperatura: 0.2

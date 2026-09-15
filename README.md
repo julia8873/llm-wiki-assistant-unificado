@@ -55,7 +55,12 @@ El script `./instalar.sh` es un orquestador que genera las plantillas, empaqueta
    ```
    *El script detectará que te faltan los archivos de configuración, copiará automáticamente `.env` y `config/config.yaml` desde sus plantillas `.example`, y se detendrá avisándote de que debes rellenarlos.*
 3. **Rellenar Secretos y Configuración:**
-   - Abre el archivo `.env` recién creado y cambia todas las contraseñas marcadas como `CHANGE_ME`. Genera claves seguras para los secretos internos.
+   - Abre el archivo `.env` recién creado y cambia todas las contraseñas marcadas como `CHANGE_ME`.
+      Tendrás que generar con openssl rand -hex 32 las siguientes variables: 
+      - AGENT_HMAC_SECRET
+      - INTERNAL_SERVICE_TOKEN
+      - PII_SECRET_KEY
+      - MAUBOT_CRYPTO_PICKLE_KEY
    - Abre `config/config.yaml`. Define tu `git.proveedor_activo` (ej. github) e introduce tu organización y PAT. **Importante para GitHub:** El token clásico debe tener marcado obligatoriamente el scope completo de **`repo`**.
    - En el mismo archivo, define tu `llm.proveedor_activo`.
 4. **Levantar Infraestructura y Empaquetar:**
@@ -63,8 +68,6 @@ El script `./instalar.sh` es un orquestador que genera las plantillas, empaqueta
    ```bash
    ./instalar.sh
    ```
-   *Como ahora sí tienes los archivos configurados, el script levantará todos los contenedores Docker, empaquetará el bot (`.mbp`) y generará la documentación.*
-
 ---
 
 ### Opción B: Arranque Rápido Manual (Solo Docker)
@@ -96,5 +99,6 @@ Una vez estén los contenedores corriendo (puedes verificarlo con `docker ps`), 
    - Accede a la interfaz de administración en `http://localhost:29317/_matrix/maubot/` (usuario `admin`, contraseña la de tu `.env`).
    - Sube el plugin del bot (empaquetado como `.mbp`) en la pestaña **Plugins**, este se encontrará en: llm-wiki-assitant-unificado/src/bot/llm-wiki-assitant-plugin/plugin.mbp.
    - Añade el cliente conectándolo a `http://synapse:8008` (usando el usuario `@llm_wiki_bot:localhost`).
+   El access token del bot se encuentra en el .env en la variable BOT_ACCESS_TOKEN, generada tras ejecutar ./instalar.sh
    - Crea la instancia uniendo el Cliente y el Plugin.
 

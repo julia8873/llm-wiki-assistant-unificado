@@ -186,7 +186,10 @@ cmd_install_all() {
   echo ""
 
   echo "--- Fase: Stack Docker ---"
-  copy_if_missing "${ROOT_DIR}/.env.example" "${ROOT_DIR}/.env"
+  if grep -q "CHANGE_ME" "${ROOT_DIR}/.env" 2>/dev/null || grep -q "CHANGE_ME" "${ROOT_DIR}/config/config.yaml" 2>/dev/null; then
+    warn_pending_config
+    error "La instalación se ha detenido porque necesitas rellenar los secretos en .env y config/config.yaml."
+  fi
   cmd_up "$@"
   echo ""
 
