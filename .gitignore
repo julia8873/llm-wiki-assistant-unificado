@@ -25,3 +25,11 @@ ENV/
 # Archivos del sistema operativo
 .DS_Store
 Thumbs.db
+
+# Synapse Data
+src/matrix/synapse-data/*.db
+src/matrix/synapse-data/*.db-shm
+src/matrix/synapse-data/*.db-wal
+src/matrix/synapse-data/*.key
+src/matrix/synapse-data/*.pid
+src/matrix/synapse-data/media_store/
