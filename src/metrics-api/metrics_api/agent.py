@@ -318,8 +318,11 @@ async def generar_resumen(db: Session, curso_id: int, alumno_id: int, force: boo
         }
         return AgentSummaryResponse(estado="sin_actividad")
         
-    diffs = await get_github_diffs(repo_url)
-    if not diffs.strip():
+    # Importar get_all_jsonls_from_dir localmente para evitar dependencias circulares complejas
+    from metrics_api.main import get_all_jsonls_from_dir
+    hechos_crudos = await get_all_jsonls_from_dir(repo_url, "logs/interacciones")
+    
+    if not hechos_crudos:
         _SUMMARY_CACHE[cache_key] = {
             "summary": {"estado": "sin_actividad", "resumen_hash": "", "version_rubrica": "1.0"},
             "timestamp": now,
@@ -337,6 +340,9 @@ async def generar_resumen(db: Session, curso_id: int, alumno_id: int, force: boo
 Rúbrica de Criterios:
 {json.dumps(rubrica.get('criterios', []), ensure_ascii=False, indent=2)}
 
+IMPORTANTE: El objetivo de esta evaluación es analizar el DESEMPEÑO, COMPRENSIÓN Y PATRONES DE USO DEL ESTUDIANTE basándose en sus interacciones con el asistente.
+ESTÁS EVALUANDO AL ALUMNO, NO AL BOT. NO evalúes si el bot funciona bien, si el bot maneja bien las consultas, o el tono del bot. Evalúa qué pregunta el estudiante, cómo lo pregunta, y qué indica eso sobre su progreso en la asignatura.
+
 IMPORTANTE: Cuando incluyas un punto en "fortalezas" o "senales_alerta" que esté directamente relacionado con un criterio de la rúbrica, debes referenciar el nombre de dicho criterio explícitamente en el texto.
 
 Devuelve estrictamente un JSON con esta estructura exacta (no añadas nada más, no uses notas numéricas):
@@ -349,7 +355,8 @@ Devuelve estrictamente un JSON con esta estructura exacta (no añadas nada más,
 }}
 """
     
-    user_content = f"--- INICIO DEL CONTENIDO DEL ESTUDIANTE ---\n{diffs}\n--- FIN DEL CONTENIDO DEL ESTUDIANTE ---"
+    hechos_context = json.dumps(hechos_crudos, ensure_ascii=False, indent=2)
+    user_content = f"--- INICIO DE LAS CONVERSACIONES DEL ESTUDIANTE ---\n{hechos_context}\n--- FIN DE LAS CONVERSACIONES DEL ESTUDIANTE ---"
     
     # LLM Call
     llm_result = await invoke_llm(system_prompt, user_content, response_format="json")
@@ -367,11 +374,6 @@ Devuelve estrictamente un JSON con esta estructura exacta (no añadas nada más,
     }
     
     summary_dict["resumen_hash"] = generate_summary_hash(curso_id, alumno_id, summary_dict)
-    
-    # Importar get_all_jsonls_from_dir localmente para evitar dependencias circulares complejas si es necesario
-    # o usarlo desde app.main si se puede
-    from metrics_api.main import get_all_jsonls_from_dir
-    hechos_crudos = await get_all_jsonls_from_dir(repo_url, "logs/interacciones")
     
     _SUMMARY_CACHE[cache_key] = {
         "summary": summary_dict,

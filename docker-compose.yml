@@ -210,6 +210,7 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
       - MAPEO_API_URL=http://moodle-matrix-dev-mapeo-api-1:8000
+      - METRICS_API_URL=http://metrics-api:8000
       - PYTHONPATH=/data/llm-wiki-assistant-plugin:/shared-pkg
     volumes:
       - ./src/bot:/data
@@ -236,6 +237,7 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
       - MAPEO_API_URL=http://moodle-matrix-dev-mapeo-api-1:8000
+      - METRICS_API_URL=http://metrics-api:8000
       - PYTHONPATH=/data/llm-wiki-assistant-plugin:/shared-pkg
     volumes:
       - ./src/bot:/data
