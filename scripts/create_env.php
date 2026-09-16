@@ -6,8 +6,8 @@ require_once($CFG->dirroot.'/course/lib.php');
 
 // Create or update users
 $users = [
-    ['username' => 'profesor1', 'firstname' => 'Profesor', 'lastname' => 'Uno', 'email' => 'profe@test.com', 'pass' => 'profesor1'],
-    ['username' => 'alumno1', 'firstname' => 'Alumno', 'lastname' => 'Uno', 'email' => 'alumno@test.com', 'pass' => 'alumno1']
+    ['username' => 'profesor1', 'firstname' => 'Profesor', 'lastname' => 'Uno', 'email' => 'profe@test.com', 'pass' => 'Profesor1_'],
+    ['username' => 'alumno1', 'firstname' => 'Alumno', 'lastname' => 'Uno', 'email' => 'alumno@test.com', 'pass' => 'Alumno1_']
 ];
 
 $user_ids = [];

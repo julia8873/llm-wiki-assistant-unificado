@@ -42,15 +42,6 @@ class MapeoCreate(MapeoBase):
     moodle_username: str = ""
     moodle_course_shortname: str = ""
 
-class SyncStudent(BaseModel):
-    moodle_user_id: int
-    moodle_username: str
-    is_teacher: bool = False
-
-class SyncRoster(BaseModel):
-    moodle_course_id: int
-    moodle_course_shortname: str
-    students: list[SyncStudent]
 
 class MapeoRead(MapeoBase):
     """!

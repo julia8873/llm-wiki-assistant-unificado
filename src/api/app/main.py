@@ -17,7 +17,7 @@ from fastapi import Request
 import redis
 from rq import Queue, Retry
 
-from .models import MapeoCreate, MapeoRead, MapeoEstado, CursoCreate, EventoCreate, EventoRead, SyncRoster
+from .models import MapeoCreate, MapeoRead, MapeoEstado, CursoCreate, EventoCreate, EventoRead
 from .db import create_db_and_tables, get_session, MapeoDB, EventosBotDB
 from .services.git import get_git_provider, GitProviderConfigError
 
@@ -230,43 +230,6 @@ def read_mapeos(response: Response, request: Request,
         
     return results
 
-@app.post("/v1/mapeos/sync-roster", status_code=status.HTTP_200_OK)
-@app.post("/mapeos/sync-roster", status_code=status.HTTP_200_OK, deprecated=True)
-def sync_roster(response: Response, request: Request, 
-    roster: SyncRoster,
-    session: Session = Depends(get_session),
-    token: str = Depends(verify_token)
-):
-    if not request.url.path.startswith("/v1/"):
-        response.headers["Sunset"] = "Wed, 18 Feb 2027 00:00:00 GMT"
-
-    """Sincroniza la lista de alumnos de un curso."""
-    course_id = roster.moodle_course_id
-    
-    for student in roster.students:
-        # Check si ya existe
-        existing = session.query(MapeoDB).filter(
-            MapeoDB.moodle_user_id == student.moodle_user_id,
-            MapeoDB.moodle_course_id == course_id
-        ).first()
-        
-        if not existing:
-            new_mapeo = MapeoDB(
-                moodle_user_id=student.moodle_user_id,
-                moodle_course_id=course_id,
-                estado=MapeoEstado.PENDIENTE_GITHUB,
-                is_teacher=1 if student.is_teacher else 0,
-                moodle_username=student.moodle_username,
-                moodle_course_name=roster.moodle_course_shortname
-            )
-            session.add(new_mapeo)
-        else:
-            # Update existing with course name if missing
-            if roster.moodle_course_shortname and not existing.moodle_course_name:
-                existing.moodle_course_name = roster.moodle_course_shortname
-    
-    session.commit()
-    return {"status": "ok"}
 
 @app.get("/v1/mapeos/by-room/{matrix_room_id}", response_model=MapeoRead)
 @app.get("/mapeos/by-room/{matrix_room_id}", response_model=MapeoRead, deprecated=True)

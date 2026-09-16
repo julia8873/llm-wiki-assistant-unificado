@@ -3,7 +3,7 @@
 #   SQLite:   sqlite:filename.db
 #   Postgres: postgresql://username:password@hostname/dbname
 database: sqlite:/data/maubot.db
-crypto_db_pickle_key: 740f0d88ae0bf53239b5a869b28b07e478180fbece574d30d8b01930582613f2
+crypto_db_pickle_key: c9a8ac2da7aa9bff7790cd5ad285737fc879b31ae7ae1944c26fd39300a58536
 
 # Separate database URL for the crypto database. "default" means use the same database as above.
 crypto_database: default

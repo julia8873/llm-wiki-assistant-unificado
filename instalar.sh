@@ -582,7 +582,18 @@ EOF
           info "Ejecutando upgrade de plugins de Moodle para registrar observadores de eventos..."
           docker exec -u daemon "$moodle_container" php /opt/bitnami/moodle/admin/cli/upgrade.php --non-interactive 2>/dev/null || true
           docker exec -u daemon "$moodle_container" php /opt/bitnami/moodle/admin/cli/purge_caches.php 2>/dev/null || true
-          ok "Plugin block_bdc registrado en Moodle con token actualizado."
+          
+          info "Habilitando Web Services y API Móvil en Moodle..."
+          docker exec -u daemon "$moodle_container" php /opt/bitnami/moodle/admin/cli/cfg.php --name=enablewebservices --set=1 2>/dev/null || true
+          docker exec -u daemon "$moodle_container" php /opt/bitnami/moodle/admin/cli/cfg.php --name=enablemobilewebservice --set=1 2>/dev/null || true
+          
+          local mariadb_container=$(grep -m 1 MARIADB_NOMBRE_CONTENEDOR .env | cut -d= -f2 | tr -d '\r' || echo "moodle-matrix-dev-mariadb-1")
+          local mariadb_user=$(grep -m 1 MARIADB_USER .env | cut -d= -f2 | tr -d '\r' || echo "bn_moodle")
+          local mariadb_pass=$(grep -m 1 MARIADB_PASSWORD .env | cut -d= -f2 | tr -d '\r' || echo "moodle_db_pass")
+          local mariadb_db=$(grep -m 1 MARIADB_DATABASE .env | cut -d= -f2 | tr -d '\r' || echo "bitnami_moodle")
+          docker exec "$mariadb_container" mysql -u "$mariadb_user" -p"$mariadb_pass" "$mariadb_db" -e "UPDATE mdl_external_services SET enabled = 1 WHERE shortname = 'moodle_mobile_app';" 2>/dev/null || true
+          
+          ok "Plugin block_bdc registrado y Web Services habilitados."
           break
         elif [[ "$s_status" == "unhealthy" ]]; then
           error "Synapse falló el healthcheck. Revisa 'docker logs $synapse_container'."
