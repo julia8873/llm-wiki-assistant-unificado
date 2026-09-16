@@ -2,15 +2,33 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { User, BookOpen, Mail, ShieldCheck } from 'lucide-react';
+import { apiClient } from '../lib/apiClient';
 
 export const TeacherProfile: React.FC = () => {
   const { user } = useAuth();
 
   if (!user) return null;
 
-  const COURSE_NAMES: Record<number, string> = {
-    3: 'Ecuaciones Diferenciales II'
-  };
+  const [courseNames, setCourseNames] = React.useState<Record<number, string>>({});
+
+  React.useEffect(() => {
+    const fetchNames = async () => {
+      const names: Record<number, string> = {};
+      for (const cid of user.allowed_courses) {
+        try {
+          const res = await apiClient(`/v1/metrics/cursos/${cid}`);
+          if (res.ok) {
+            const data = await res.json();
+            names[cid] = data.course_name || `Curso ${cid}`;
+          }
+        } catch (e) {
+          names[cid] = `Curso ${cid}`;
+        }
+      }
+      setCourseNames(names);
+    };
+    if (user.allowed_courses.length > 0) fetchNames();
+  }, [user.allowed_courses]);
 
   return (
     <div className="container">
@@ -54,7 +72,7 @@ export const TeacherProfile: React.FC = () => {
               <div key={courseId} className="flex justify-between items-center" style={{ padding: '1rem', backgroundColor: 'var(--bg-main)', borderRadius: 'var(--radius)' }}>
                 <div>
                   <h4 style={{ margin: '0 0 0.25rem 0', color: 'var(--text-main)' }}>
-                    {COURSE_NAMES[courseId] || `Curso ${courseId}`}
+                    {courseNames[courseId] || `Curso ${courseId}`}
                   </h4>
                   <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.875rem' }}>
                     ID Moodle: {courseId}

@@ -299,7 +299,7 @@ class LLMWikiAssistantPlugin(Plugin):
             
             user_prompt = f"Mensaje del alumno:\n<<<{query}>>>"
             
-            response_text = await self.llm_client.get_response(system_prompt_with_context, user_prompt)
+            response_text = await self.llm_client.get_response(system_prompt_with_context, user_prompt, response_format="json")
             
             import json
             

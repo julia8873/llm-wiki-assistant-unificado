@@ -33,6 +33,7 @@ class PaginatedInteractions(PaginatedResponse):
 class CourseMetricsResponse(BaseModel):
     """Modelo para metricas de curso."""
     course_id: int
+    course_name: str = ""
     total_interactions: int
     interactions_by_type: Dict[str, int]
     percentiles: Dict[str, Any] = {}
@@ -41,6 +42,7 @@ class StudentMetricsResponse(BaseModel):
     """Modelo para metricas de estudiante."""
     student_id: int
     course_id: int
+    course_name: str = ""
     total_interactions: int
     interactions_by_type: Dict[str, int]
     repo_url: Optional[str] = None
@@ -49,6 +51,7 @@ class StudentCourseItem(BaseModel):
     """Item de curso para estudiante."""
     moodle_user_id: int
     moodle_username: str
+    course_name: str = ""
     repo_url: Optional[str]
     total_interactions: int
     ultima_actividad: Optional[datetime] = None
@@ -57,6 +60,7 @@ class StudentCourseItem(BaseModel):
 class CourseStudentsResponse(BaseModel):
     """Modelo para lista de estudiantes."""
     course_id: int
+    course_name: str = ""
     students: List[StudentCourseItem]
 
 from typing import Literal

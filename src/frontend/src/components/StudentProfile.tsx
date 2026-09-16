@@ -31,9 +31,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
-const COURSE_NAMES: Record<string, string> = {
-  '3': 'Ecuaciones Diferenciales II'
-};
+  // Removed COURSE_NAMES
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Component
@@ -42,7 +40,7 @@ export const StudentProfile: React.FC = () => {
   const { courseId, studentId } = useParams();
   const location = useLocation();
   const studentName = location.state?.studentName || `Alumno ${studentId}`;
-  const courseName = courseId ? COURSE_NAMES[courseId] || `Curso ${courseId}` : `Curso ${courseId}`;
+  // courseName declaration moved below
 
   // ── Data ────────────────────────────────────────────────────────────────────
   const [metrics, setMetrics] = useState<StudentMetrics | null>(null);
@@ -50,6 +48,8 @@ export const StudentProfile: React.FC = () => {
   const [syncTrigger, setSyncTrigger] = useState(0);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const courseName = metrics?.course_name || (courseId ? `Curso ${courseId}` : 'Curso');
 
   // ── Tab ─────────────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<TabId>('stats');
@@ -174,7 +174,7 @@ export const StudentProfile: React.FC = () => {
       // Reset chat history: new evaluation produces a new resumen_hash,
       // which makes any previous follow-up conversation incompatible.
       setChatHistory([]);
-      const res = await apiClient(`/v1/metrics/cursos/${courseId}/estudiantes/${studentId}/resumen`, { method: 'POST' });
+      const res = await apiClient(`/v1/metrics/cursos/${courseId}/estudiantes/${studentId}/resumen?force=true`, { method: 'POST' });
       if (res.status === 503) { setAgent503(true); return; }
       if (!res.ok) throw new Error('Error al generar resumen');
       setAgentSummary(await res.json());

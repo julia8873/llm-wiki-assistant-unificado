@@ -46,8 +46,16 @@ export interface PaginatedInteraccionesMetadatos {
   offset: number;
 }
 
+export interface Student {
+  moodle_user_id: number;
+  moodle_username: string;
+  course_name?: string;
+  repo_url: string;
+}
+
 export interface CourseMetrics {
   course_id: number;
+  course_name?: string;
   total_interactions: number;
   interactions_by_type: Record<string, number>;
   percentiles: {
@@ -62,6 +70,7 @@ export interface CourseMetrics {
 export interface StudentMetrics {
   student_id: number;
   course_id: number;
+  course_name?: string;
   total_interactions: number;
   interactions_by_type: Record<string, number>;
   repo_url?: string;

@@ -153,12 +153,6 @@ export const CourseDashboard: React.FC = () => {
 
   const chartData = Object.entries(metrics.interactions_by_type).map(([name, value]) => ({ name, value }));
 
-  const COURSE_NAMES: Record<number, string> = {
-    3: 'Ecuaciones Diferenciales II',
-    8: 'UGRinfo Oficial',
-    9: 'NBT Oficial'
-  };
-
   const sortedStudents = [...students].sort((a, b) => {
     let comparison = 0;
     switch (sortField) {
@@ -183,7 +177,7 @@ export const CourseDashboard: React.FC = () => {
   return (
     <div className="container animate-slide-up">
       <div className="mb-8 flex justify-between items-center">
-        <h2>Dashboard de {COURSE_NAMES[Number(courseId)] || `Curso ${courseId}`}</h2>
+        <h2>Dashboard de {metrics.course_name || `Curso ${courseId}`}</h2>
         <button onClick={() => navigate('/')} className="btn-ghost" style={{ backgroundColor: 'var(--bg-card)' }}>
           Volver a Mis Cursos
         </button>

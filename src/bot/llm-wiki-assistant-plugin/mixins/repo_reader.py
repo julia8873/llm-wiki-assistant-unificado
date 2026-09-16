@@ -225,7 +225,7 @@ class RepoReader:
         if agents_content:
             system_prompt += f"--- REGLAS OKF (AGENTS.md) ---\n{agents_content}\n"
             
-        respuesta_llm = await self.llm_client.get_response(system_prompt, prompt_conceptos, max_tokens_override=8192)
+        respuesta_llm = await self.llm_client.get_response(system_prompt, prompt_conceptos, max_tokens_override=8192, response_format="json")
         
         # Comprobar si la IA determinó que la extracción era mala
         if "<error>mala_extraccion</error>" in respuesta_llm:

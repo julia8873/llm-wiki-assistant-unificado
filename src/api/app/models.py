@@ -31,6 +31,7 @@ class MapeoBase(BaseModel):
     estado: MapeoEstado = MapeoEstado.PENDIENTE_GITHUB
     is_teacher: bool = False
     moodle_username: Optional[str] = None
+    moodle_course_name: Optional[str] = None
     course_close_date: Optional[datetime] = None
 
 class MapeoCreate(MapeoBase):

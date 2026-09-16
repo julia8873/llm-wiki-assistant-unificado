@@ -289,6 +289,10 @@ services:
       - ENVIRONMENT=dev
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
       - PII_SECRET_KEY=${PII_SECRET_KEY}
+      - GITHUB_TOKEN=${GITHUB_PAT}
+      - GITHUB_TOKEN_AGENT=${GITHUB_PAT}
+      - ENABLE_EVALUATION_AGENT=${ENABLE_EVALUATION_AGENT}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
 
   metrics-worker:
     image: moodle-matrix-dev-mapeo-api

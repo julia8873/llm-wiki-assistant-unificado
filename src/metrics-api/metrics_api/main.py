@@ -154,8 +154,23 @@ def get_course_metrics(response: Response, request: Request,
     if not user.is_teacher:
         raise HTTPException(status_code=403, detail="Solo profesores pueden ver métricas del curso completo")
     total, by_type, percentiles = get_course_aggregates(session, curso_id)
+    
+    course_name = ""
+    mapeo_url = settings.mapeo_api_url
+    mapeo_token = settings.mapeo_api_token
+    try:
+        headers = {"Authorization": f"Bearer {mapeo_token}"} if mapeo_token else {}
+        m_api_res = requests.get(f"{mapeo_url}/mapeos?moodle_course_id={curso_id}", headers=headers, timeout=3)
+        if m_api_res.ok:
+            mapeos = m_api_res.json()
+            if mapeos:
+                course_name = mapeos[0].get("moodle_course_name") or ""
+    except Exception:
+        pass
+
     return CourseMetricsResponse(
         course_id=curso_id,
+        course_name=course_name,
         total_interactions=total,
         interactions_by_type=by_type,
         percentiles=percentiles
@@ -212,7 +227,7 @@ def get_course_students(response: Response, request: Request,
     
     if m_api_res.status_code != 200:
         if m_api_res.status_code == 404:
-            return CourseStudentsResponse(course_id=curso_id, students=[])
+            return CourseStudentsResponse(course_id=curso_id, course_name="", students=[])
         raise HTTPException(status_code=503, detail="Error consultando alumnos del curso")
 
     mapeos = m_api_res.json()
@@ -245,14 +260,17 @@ def get_course_students(response: Response, request: Request,
         students_list.append(StudentCourseItem(
             moodle_user_id=student_id,
             moodle_username=m.get("moodle_username") or f"user_{student_id}",
+            course_name=m.get("moodle_course_name") or "",
             repo_url=m.get("repo_url"),
             total_interactions=total_interactions,
             ultima_actividad=last_activity,
             estado_sincronizacion="DISCREPANCIAS_PENDIENTES" if has_discrepancies else "OK"
         ))
         
+    course_name = mapeos[0].get("moodle_course_name") or "" if mapeos else ""
     return CourseStudentsResponse(
         course_id=curso_id,
+        course_name=course_name,
         students=students_list
     )
 
@@ -272,10 +290,12 @@ async def get_student_metrics(response: Response, request: Request,
     from metrics_api.agent import get_mapeo
     mapeo = await get_mapeo(curso_id, estudiante_id)
     repo_url = mapeo.get("repo_url")
+    course_name = mapeo.get("moodle_course_name") or ""
     
     return StudentMetricsResponse(
         student_id=estudiante_id,
         course_id=curso_id,
+        course_name=course_name,
         total_interactions=total,
         interactions_by_type=by_type,
         repo_url=repo_url
@@ -625,11 +645,11 @@ def put_rubrica(curso_id: int, req: RubricaCreate, user: AuthenticatedUser = Dep
 
 
 @app.post("/v1/metrics/cursos/{curso_id}/estudiantes/{alumno_id}/resumen", response_model=AgentSummaryResponse)
-async def api_generar_resumen(curso_id: int, alumno_id: int, user: AuthenticatedUser = Depends(verify_token), session: Session = Depends(get_session)):
+async def api_generar_resumen(curso_id: int, alumno_id: int, force: bool = False, user: AuthenticatedUser = Depends(verify_token), session: Session = Depends(get_session)):
     verificar_permisos(curso_id, user)
     if not user.is_teacher:
         raise HTTPException(status_code=403, detail="Solo profesores pueden ver el resumen")
-    return await generar_resumen(session, curso_id, alumno_id)
+    return await generar_resumen(session, curso_id, alumno_id, force=force)
 
 @app.post("/v1/metrics/cursos/{curso_id}/estudiantes/{alumno_id}/resumen/seguimiento", response_model=AgentFollowUpResponse)
 async def api_seguimiento_resumen(curso_id: int, alumno_id: int, req: AgentFollowUpRequest, user: AuthenticatedUser = Depends(verify_token)):
@@ -916,9 +936,9 @@ from metrics_api.schemas import PaginatedInteraccionesMetadatos, InteraccionMeta
 from metrics_api.auth import AuthenticatedUser
 
 async def get_all_jsonls_from_dir(repo_url: str, dir_path: str) -> list:
-    github_token = settings.github_token_agent
+    github_token = settings.github_token_agent or settings.github_token
     if not github_token:
-        raise HTTPException(status_code=500, detail="GITHUB_TOKEN_AGENT no configurado")
+        raise HTTPException(status_code=500, detail="GITHUB_TOKEN no configurado")
     
     parts = repo_url.rstrip("/").split("/")
     if len(parts) < 2:

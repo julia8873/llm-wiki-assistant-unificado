@@ -118,7 +118,8 @@ async def create_mapeo(response: Response, request: Request, mapeo: MapeoCreate,
         matrix_room_id=mapeo.matrix_room_id,
         estado=MapeoEstado.PENDIENTE_GITHUB,
         is_teacher=1 if mapeo.is_teacher else 0,
-        moodle_username=mapeo.moodle_username
+        moodle_username=mapeo.moodle_username,
+        moodle_course_name=mapeo.moodle_course_shortname
     )
     
     try:
@@ -255,9 +256,14 @@ def sync_roster(response: Response, request: Request,
                 moodle_course_id=course_id,
                 estado=MapeoEstado.PENDIENTE_GITHUB,
                 is_teacher=1 if student.is_teacher else 0,
-                moodle_username=student.moodle_username
+                moodle_username=student.moodle_username,
+                moodle_course_name=roster.moodle_course_shortname
             )
             session.add(new_mapeo)
+        else:
+            # Update existing with course name if missing
+            if roster.moodle_course_shortname and not existing.moodle_course_name:
+                existing.moodle_course_name = roster.moodle_course_shortname
     
     session.commit()
     return {"status": "ok"}

@@ -211,11 +211,54 @@ async def invoke_llm(system_prompt: str, user_content: str, response_format=None
                 return text
             except Exception as e:
                 raise HTTPException(status_code=500, detail="Error parseando respuesta LLM")
+    elif provider in ["ollama", "openai"]:
+        provider_cfg = llm_cfg.get(provider, {})
+        api_key = os.getenv(provider_cfg.get("api_key_env_var", ""), provider_cfg.get("api_key", ""))
+        model = provider_cfg.get("modelo_defecto")
+        if not model:
+            raise HTTPException(status_code=500, detail=f"Modelo LLM no configurado para {provider}")
+        base_url = provider_cfg.get("api_base_url")
+        if not base_url:
+            raise HTTPException(status_code=500, detail=f"api_base_url no configurada para {provider}")
+            
+        url = f"{base_url}/chat/completions"
+        headers = {"Content-Type": "application/json"}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+            
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_content}
+            ],
+            "temperature": provider_cfg.get("temperatura", 0.2),
+            "max_tokens": provider_cfg.get("max_tokens", 1024),
+            "top_p": provider_cfg.get("top_p", 0.95)
+        }
+        
+        if response_format == "json":
+            payload["response_format"] = {"type": "json_object"}
+            
+        async with httpx.AsyncClient(timeout=provider_cfg.get("timeout_segundos", 60.0)) as client:
+            try:
+                resp = await client.post(url, json=payload, headers=headers)
+                resp.raise_for_status()
+                data = resp.json()
+                text = data["choices"][0]["message"]["content"]
+                if response_format == "json":
+                    text = text.replace("```json", "").replace("```", "").strip()
+                    return json.loads(text)
+                return text
+            except httpx.HTTPStatusError as e:
+                raise HTTPException(status_code=500, detail=f"Error HTTP de {provider}: {e.response.status_code} - {e.response.text}")
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Error parseando respuesta de {provider}: {str(e)}")
     else:
         # Fallback or other providers not fully implemented for this phase snippet
         raise HTTPException(status_code=500, detail=f"LLM Provider {provider} not supported for JSON format yet")
 
-async def generar_resumen(db: Session, curso_id: int, alumno_id: int) -> AgentSummaryResponse:
+async def generar_resumen(db: Session, curso_id: int, alumno_id: int, force: bool = False) -> AgentSummaryResponse:
     if not settings.enable_evaluation_agent:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, 
@@ -229,7 +272,7 @@ async def generar_resumen(db: Session, curso_id: int, alumno_id: int) -> AgentSu
     
     cache_key = f"{curso_id}_{alumno_id}"
     now = time.time()
-    if cache_key in _SUMMARY_CACHE:
+    if not force and cache_key in _SUMMARY_CACHE:
         cached = _SUMMARY_CACHE[cache_key]
         if now - cached["timestamp"] < ttl_min * 60:
             return AgentSummaryResponse(**cached["summary"])

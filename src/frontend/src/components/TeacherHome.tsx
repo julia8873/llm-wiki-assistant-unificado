@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
+import { apiClient } from '../lib/apiClient';
 
 export const TeacherHome: React.FC = () => {
   const { user } = useAuth();
@@ -10,11 +11,26 @@ export const TeacherHome: React.FC = () => {
     return <div>Acceso denegado</div>;
   }
 
-  const COURSE_NAMES: Record<number, string> = {
-    3: 'Ecuaciones Diferenciales II',
-    8: 'UGRinfo Oficial',
-    9: 'NBT Oficial'
-  };
+  const [courseNames, setCourseNames] = React.useState<Record<number, string>>({});
+
+  React.useEffect(() => {
+    const fetchNames = async () => {
+      const names: Record<number, string> = {};
+      for (const cid of user.allowed_courses) {
+        try {
+          const res = await apiClient(`/v1/metrics/cursos/${cid}`);
+          if (res.ok) {
+            const data = await res.json();
+            names[cid] = data.course_name || `Curso ${cid}`;
+          }
+        } catch (e) {
+          names[cid] = `Curso ${cid}`;
+        }
+      }
+      setCourseNames(names);
+    };
+    if (user.allowed_courses.length > 0) fetchNames();
+  }, [user.allowed_courses]);
 
   return (
     <div className="container animate-slide-up">
@@ -31,7 +47,7 @@ export const TeacherHome: React.FC = () => {
                 <BookOpen size={28} />
               </div>
               <div>
-                <h3 style={{ margin: 0, color: 'var(--text-main)', fontSize: '1.1rem' }}>{COURSE_NAMES[courseId] || `Curso ${courseId}`}</h3>
+                <h3 style={{ margin: 0, color: 'var(--text-main)', fontSize: '1.1rem' }}>{courseNames[courseId] || `Curso ${courseId}`}</h3>
                 <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Ver Dashboard &rarr;</p>
               </div>
             </div>
