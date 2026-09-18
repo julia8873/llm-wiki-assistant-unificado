@@ -33,3 +33,8 @@ src/matrix/synapse-data/*.db-wal
 src/matrix/synapse-data/*.key
 src/matrix/synapse-data/*.pid
 src/matrix/synapse-data/media_store/
+
+# Archivos basura del bot
+src/bot/trash/
+src/bot/maubot.db*
+*.mbp
