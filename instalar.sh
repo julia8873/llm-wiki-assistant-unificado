@@ -186,10 +186,7 @@ cmd_install_all() {
   echo ""
 
   echo "--- Fase: Stack Docker ---"
-  if grep -q "CHANGE_ME" "${ROOT_DIR}/.env" 2>/dev/null || grep -q "CHANGE_ME" "${ROOT_DIR}/config/config.yaml" 2>/dev/null; then
-    warn_pending_config
-    error "La instalación se ha detenido porque necesitas rellenar los secretos en .env y config/config.yaml."
-  fi
+
   cmd_up "$@"
   echo ""
 
@@ -238,6 +235,21 @@ generate_env() {
     info "Se ha generado un MAPEO_API_TOKEN aleatorio para esta instancia."
   fi
 
+  # Generar secretos de seguridad automáticamente
+  local secrets=("AGENT_HMAC_SECRET" "INTERNAL_SERVICE_TOKEN" "PII_SECRET_KEY" "MAUBOT_CRYPTO_PICKLE_KEY")
+  for secret in "${secrets[@]}"; do
+    if grep -q "${secret}=.*GENERATE_RANDOM" "$env_file"; then
+      local new_secret
+      if [[ "$secret" == "PII_SECRET_KEY" ]]; then
+        new_secret=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '\n')
+      else
+        new_secret=$(openssl rand -hex 32)
+      fi
+      sed -i "s/${secret}=.*GENERATE_RANDOM/${secret}=${new_secret}/" "$env_file"
+      info "Se ha generado un ${secret} aleatorio para esta instancia."
+    fi
+  done
+
   # Eliminar retornos de carro (CRLF -> LF) para evitar errores "command not found" al hacer source en WSL
   sed -i 's/\r$//' "$env_file"
 
@@ -250,7 +262,11 @@ generate_env() {
     check_docker
     docker run --rm -v "${ROOT_DIR}/src/bot:/data" alpine sh -c "
       if [ -n \"$m_pass\" ]; then
-        sed -i -e \"s|root: ''|admin: \\\"${m_pass}\\\"|\" -e \"s|admin: \\\"CHANGE_ME_PASSWORD\\\"|admin: \\\"${m_pass}\\\"|\" /data/config.yaml 2>/dev/null || true
+        apk add --no-cache python3 py3-bcrypt >/dev/null 2>&1 || true
+        m_hash=\$(python3 -c \"import bcrypt; print(bcrypt.hashpw('${m_pass}'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'))\" 2>/dev/null)
+        if [ -n \"\$m_hash\" ]; then
+          sed -i \"s|^[[:space:]]*admin: .*|    admin: \$m_hash|\" /data/config.yaml 2>/dev/null || true
+        fi
       fi
       if [ -n \"$m_key\" ]; then
         sed -i \"s|pickle_key: .*|pickle_key: \\\"${m_key}\\\"|\" /data/config.yaml 2>/dev/null || true
@@ -461,9 +477,9 @@ cmd_up() {
 
   if [ "$use_ollama" = true ]; then
     info "Perfil Ollama activado."
-    docker compose $compose_args --env-file .env --profile ollama up -d --build --pull=missing
+    docker compose $compose_args --env-file .env --profile ollama up -d --build
   else
-    docker compose $compose_args --env-file .env up -d --build --pull=missing
+    docker compose $compose_args --env-file .env up -d --build
   fi
   
   info "Esperando a que Moodle y mapeo-api estén operativos (Healthchecks)..."

@@ -88,14 +88,17 @@ services:
   mapeo-api:
     build:
       context: ./src/api
+    image: moodle-matrix-dev-mapeo-api
     container_name: ${MAPEO_API_NOMBRE_CONTENEDOR}
     environment:
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
       - GITHUB_PAT=${GITHUB_PAT}
       - DATABASE_URL=${DATABASE_URL}
+      - PYTHONPATH=/shared-pkg
     volumes:
       - mapeo_api_data:/data
       - ./config:/config:ro
+      - ./src/shared:/shared-pkg:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -275,13 +278,19 @@ services:
 
   metrics-api:
     image: moodle-matrix-dev-mapeo-api
+    pull_policy: never
+    depends_on:
+      mapeo-api:
+        condition: service_healthy
     container_name: metrics-api
     command: ["sh", "-c", "pip install -e . && alembic upgrade head && uvicorn metrics_api.main:app --host 0.0.0.0 --port 8000"]
     volumes:
       - ./src/metrics-api:/app
       - ./config:/config
+      - ./src/shared:/shared-pkg:ro
     working_dir: /app
     environment:
+      - PYTHONPATH=/shared-pkg
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - JWT_SECRET_KEY=dev_secret_key_for_local_testing_only
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
@@ -298,6 +307,10 @@ services:
 
   metrics-worker:
     image: moodle-matrix-dev-mapeo-api
+    pull_policy: never
+    depends_on:
+      mapeo-api:
+        condition: service_healthy
     container_name: metrics-worker
     command: ["sh", "-c", "export PYTHONPATH=/shared-pkg && pip install -e /metrics-api && pip install -e . && python -m metrics_worker.worker"]
     volumes:

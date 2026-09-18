@@ -11,7 +11,7 @@ El proyecto está diseñado mediante una arquitectura de microservicios. A conti
 ### Raíz
 - **`docker-compose.yml`**: Archivo orquestador central que define y levanta todos los microservicios juntos (Bases de datos, APIs, Bots, Frontend, etc.).
 - **`.env.example`**: Plantilla de variables de entorno donde se definen las contraseñas, tokens y configuración sensible de todo el ecosistema.
-- **`instalar.sh`**: Script interactivo para facilitar la instalación y ejecución de herramientas de testeo/documentación.
+- **`instalar.sh`**: Script interactivo para la ejecución de herramientas de testeo, generación de documentación y operaciones auxiliares.
 
 ### Directorios Globales
 - **`config/`**: Contiene `config.yaml`, que funciona como la única fuente de verdad para la configuración no sensible (proveedores LLM a usar, configuración del repositorio Git, etc.).
@@ -39,66 +39,56 @@ Contiene los distintos microservicios:
 
 ## Guía de Instalación Paso a Paso
 
-Para desplegar el ecosistema desde cero, dispones de dos enfoques: usar el asistente automático o hacerlo manualmente.
+Para desplegar el ecosistema desde cero, debes configurar tus variables de entorno y levantar los contenedores mediante Docker Compose.
 
-### Opción A: Instalación Automatizada (Recomendado)
-El script `./instalar.sh` es un orquestador que genera las plantillas, empaqueta el código y levanta el entorno paso a paso.
-
-1. **Clonar y Entrar:**
+1. **Clonar y Entrar al Repositorio:**
    ```bash
    cd llm-wiki-assistant-unificado
    ```
-2. **Generar archivos base automáticamente:**
-   Ejecuta el orquestador sin argumentos:
-   ```bash
-   ./instalar.sh
-   ```
-   *El script detectará que te faltan los archivos de configuración, copiará automáticamente `.env` y `config/config.yaml` desde sus plantillas `.example`, y se detendrá avisándote de que debes rellenarlos.*
-3. **Rellenar Secretos y Configuración:**
-   - Abre el archivo `.env` recién creado y cambia todas las contraseñas marcadas como `CHANGE_ME`.
-      Tendrás que generar con openssl rand -hex 32 las siguientes variables: 
-      - AGENT_HMAC_SECRET
-      - INTERNAL_SERVICE_TOKEN
-      - PII_SECRET_KEY
-      - MAUBOT_CRYPTO_PICKLE_KEY
-   - Abre `config/config.yaml`. Define tu `git.proveedor_activo` (ej. github) e introduce tu organización y PAT. **Importante para GitHub:** El token clásico debe tener marcado obligatoriamente el scope completo de **`repo`**.
-   - En el mismo archivo, define tu `llm.proveedor_activo`.
-4. **Levantar Infraestructura y Empaquetar:**
-   Vuelve a ejecutar el orquestador:
-   ```bash
-   ./instalar.sh
-   ```
----
 
-### Opción B: Arranque Rápido Manual (Solo Docker)
-Si prefieres hacerlo a mano, o solo quieres arrancar/reiniciar la red:
-1. Copia los archivos manualmente:
+2. **Preparar la Configuración:**
+   Copia las plantillas de configuración a sus respectivos archivos finales:
    ```bash
    cp .env.example .env
    cp config/config.yaml.example config/config.yaml
    ```
-2. Rellénalos con tus datos y secretos.
-3. Levanta los contenedores usando el acceso directo:
+
+3. **Configurar Variables de Entorno (`.env`) y Configuración Global (`config.yaml`):**
+   - Abre el archivo `.env` recién creado y cambia todas las contraseñas y valores sensibles (marcados como `CHANGE_ME`).
+      - **Importante para GitHub:** El token de acceso personal (PAT) clásico debe tener marcado obligatoriamente el scope completo de **`repo`**. Este token se coloca en la variable `GITHUB_PAT`.
+      - Define tu proveedor de LLM (`llm.proveedor_activo`).
+
+   - Abre `config/config.yaml` y define tu proveedor Git activo (`git.proveedor_activo`, ej. `github`) e introduce tu organización.
+   
+
+4. **Levantar la Infraestructura:**
+   Ejecuta Docker Compose para construir y levantar todos los microservicios:
    ```bash
-   ./instalar.sh up
+   docker compose up -d --build
    ```
-   *(Nota: `instalar.sh up` lee tu `config.yaml`, genera las variables finales y ejecuta `docker compose up -d` por ti. No genera la documentación ni empaqueta el bot. Si usas esta opción, deberás generar el bot luego con `./instalar.sh bot package`).*
+   *(Nota: Puedes verificar que los contenedores están corriendo correctamente con `docker ps`).*
 
 ---
 
-### Paso 5: Operaciones Post-Instalación
-Una vez estén los contenedores corriendo (puedes verificarlo con `docker ps`), necesitas enlazar el bot:
+### Operaciones Post-Instalación
 
-1. **Token de Matrix:** Entra a la interfaz de chat (Element) en `http://localhost:8081`, inicia sesión con el usuario `admin` y la contraseña de Synapse. Ve a *Ajustes -> Ayuda e información -> Avanzado* y copia tu **Token de Acceso**. Pégalo en tu archivo `.env` en la variable `MATRIX_ACCESS_TOKEN`.
-2. **Reinicia Moodle:** Como Moodle necesita ese token, aplica los cambios reiniciándolo:
+Una vez estén los contenedores corriendo, es necesario enlazar los componentes:
+
+1. **Obtener el Token de Matrix:** 
+   - Entra a la interfaz de chat (Element) en `http://localhost:8081`.
+   - Inicia sesión con el usuario `admin` y la contraseña de Synapse configurada en tu `.env`.
+   - Ve a *Ajustes -> Ayuda e información -> Avanzado* y copia tu **Token de Acceso**.
+   - Pégalo en tu archivo `.env` en la variable `MATRIX_ACCESS_TOKEN`.
+
+2. **Reiniciar Servicios Afectados:** 
+   Como Moodle necesita ese token para su configuración, aplica los cambios reiniciando su contenedor:
    ```bash
    docker compose restart moodle
    ```
+
 3. **Configurar el Bot (Maubot):**
-   - *Nota:* Si usaste la "Opción B" en el Paso 4, primero debes compilar el bot ejecutando `./instalar.sh bot package` para obtener el archivo `.mbp`. Si usaste la "Opción A", ya lo tienes listo.
-   - Accede a la interfaz de administración en `http://localhost:29317/_matrix/maubot/` (usuario `admin`, contraseña la de tu `.env`).
-   - Sube el plugin del bot (empaquetado como `.mbp`) en la pestaña **Plugins**, este se encontrará en: llm-wiki-assitant-unificado/src/bot/llm-wiki-assitant-plugin/plugin.mbp.
-   - Añade el cliente conectándolo a `http://synapse:8008` (usando el usuario `@llm_wiki_bot:localhost`).
-   El access token del bot se encuentra en el .env en la variable BOT_ACCESS_TOKEN, generada tras ejecutar ./instalar.sh
+   - Accede a la interfaz de administración de Maubot en `http://localhost:29317/_matrix/maubot/` (usuario `admin`, y la contraseña definida en tu `.env`).
+   - Sube el plugin del bot (empaquetado como `.mbp`) en la pestaña **Plugins**. El plugin compilado debería encontrarse en `src/bot/llm-wiki-assitant-plugin/plugin.mbp`.
+   - Añade el cliente conectándolo a `http://synapse:8008` (usando el usuario `@llm_wiki_bot:localhost`). El access token del bot se puede generar desde Synapse o encontrarlo según tu configuración.
    - Crea la instancia uniendo el Cliente y el Plugin.
 
