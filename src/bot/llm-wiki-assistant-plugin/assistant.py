@@ -6,6 +6,7 @@ from ruamel.yaml import YAML
 
 yaml = YAML(typ='safe')
 
+
 from maubot import Plugin, MessageEvent
 from maubot.handlers import event
 from mautrix.types import EventType, TextMessageEventContent, MediaMessageEventContent
@@ -35,8 +36,14 @@ class LLMWikiAssistantPlugin(Plugin):
             config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "config.yaml")
         
         try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                self.app_config = yaml.load(f)
+            # Intentar usar el cargador compartido con expansión de variables
+            try:
+                from shared_pkg.config_loader import load_config
+                self.app_config = load_config()
+            except ImportError:
+                # Fallback: carga directa con ruamel.yaml (sin expansión de vars)
+                with open(config_path, "r", encoding="utf-8") as f:
+                    self.app_config = yaml.load(f)
         except Exception as e:
             self.log.error(f"Error cargando config.yaml: {e}")
             self.app_config = {}

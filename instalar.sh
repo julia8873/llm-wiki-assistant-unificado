@@ -220,107 +220,31 @@ cmd_docs() {
 }
 
 ### @fn generate_env()
-## @brief Genera el fichero .env combinando config.yaml y .env.example
+## @brief Genera el fichero .env a partir de .env.example si no existe, y autorrellena tokens secretos.
 generate_env() {
   local env_file="${ROOT_DIR}/.env"
-  local example_file="${ROOT_DIR}/.env.example"
-  
-  info "Generando/Actualizando ${env_file} a partir de config.yaml..."
-  
-  local target_file="$example_file"
-  if [[ -f "$env_file" ]]; then
-    target_file="$env_file"
+
+  info "Comprobando ${env_file}..."
+
+  # Si no existe el .env, crearlo desde la plantilla
+  if [[ ! -f "$env_file" ]]; then
+    copy_if_missing "${ROOT_DIR}/.env.example" "$env_file"
   fi
 
-  # 1. Extraer OLLAMA_PORT para ponerlo el primero (y no machacar si el usuario lo cambió en su .env)
-  if grep -q "^OLLAMA_PORT=" "$target_file"; then
-    grep "^OLLAMA_PORT=" "$target_file" > "${env_file}.tmp"
-  else
-    echo "OLLAMA_PORT=11434" > "${env_file}.tmp"
-  fi
-  
-  echo "# === BLOQUE GENERADO AUTOMÁTICAMENTE DESDE config.yaml ===" >> "${env_file}.tmp"
-  awk -F': ' '
-    /^  [a-zA-Z_]+:/ { section=toupper($1); gsub(/ |:/, "", section) }
-    /^    [a-zA-Z_]+:/ { key=toupper($1); gsub(/ |:/, "", key); val=$2; gsub(/"/, "", val); print section"_"key"="val }
-  ' "${CONFIG_FILE}" >> "${env_file}.tmp"
-
-  local github_pat
-  github_pat=$(awk '
-    /^github:/ { in_github=1; next }
-    in_github && /^  pat:/ { sub(/^  pat: /, "", $0); gsub(/"/, "", $0); print; exit }
-    in_github && /^[^ ]/ { exit }
-  ' "${CONFIG_FILE}")
-  if [[ -n "$github_pat" ]]; then
-    echo "GITHUB_PAT=${github_pat}" >> "${env_file}.tmp"
-  fi
-  
-  echo "" >> "${env_file}.tmp"
-  echo "# === SECRETOS Y VARIABLES MANUALES ===" >> "${env_file}.tmp"
-  
-  # Copiar secretos (preservando existentes si los hay)
-  if [[ -f "$env_file" ]] && grep -q "=== SECRETOS Y VARIABLES MANUALES ===" "$env_file"; then
-    sed -n '/=== SECRETOS Y VARIABLES MANUALES ===/,$p' "$env_file" | tail -n +2 >> "${env_file}.tmp"
-  elif [[ -f "$env_file" ]]; then
-    cat "$env_file" >> "${env_file}.tmp"
-  else
-    cat "$example_file" >> "${env_file}.tmp"
-  fi
-  
   # Generar MAPEO_API_TOKEN si está en modo default
-  if grep -q "MAPEO_API_TOKEN=changeme" "${env_file}.tmp"; then
+  if grep -q "MAPEO_API_TOKEN=changeme" "$env_file"; then
     local new_token=$(openssl rand -hex 16)
-    sed -i "s/MAPEO_API_TOKEN=changeme/MAPEO_API_TOKEN=${new_token}/" "${env_file}.tmp"
+    sed -i "s/MAPEO_API_TOKEN=changeme/MAPEO_API_TOKEN=${new_token}/" "$env_file"
     info "Se ha generado un MAPEO_API_TOKEN aleatorio para esta instancia."
-  else
-    warn "No se encontró el placeholder MAPEO_API_TOKEN=changeme en la configuración. Si no es intencionado, el token podría estar ausente o hardcodeado."
   fi
-  
-  # Eliminar variables duplicadas (manteniendo la primera aparición)
-  awk -F= '
-    /^[A-Za-z_][A-Za-z0-9_]*=/ {
-      if (!seen[$1]++) print $0
-      next
-    }
-    { print $0 }
-  ' "${env_file}.tmp" > "${env_file}.dedup"
-  
-  mv "${env_file}.dedup" "$env_file"
-  rm -f "${env_file}.tmp"
-  
+
   # Eliminar retornos de carro (CRLF -> LF) para evitar errores "command not found" al hacer source en WSL
   sed -i 's/\r$//' "$env_file"
 
-  # Propagar variables del .env raíz hacia moodle-matrix-dev/.env
-  # Solo se propagan si el valor en el raíz NO es un placeholder CHANGE_ME y la variable existe en el .env destino.
-  info "Propagando variables de ${ROOT_DIR}/.env hacia ${env_file}..."
-  local root_env="${ROOT_DIR}/.env"
-  local vars_to_propagate=(
-    MATRIX_ACCESS_TOKEN
-    OPENAI_API_KEY
-    OPENAI_BASE_URL
-    OPENAI_MODEL
-    GEMINI_API_KEY
-    MAUBOT_ADMIN_PASSWORD
-    MAUBOT_CRYPTO_PICKLE_KEY
-  )
-  for var in "${vars_to_propagate[@]}"; do
-    local val
-    val=$(grep -m 1 "^${var}=" "$root_env" 2>/dev/null | cut -d= -f2-)
-    if [[ -n "$val" && "$val" != *"CHANGE_ME"* ]]; then
-      # Reemplazar o añadir la variable en el .env destino
-      if grep -q "^${var}=" "$env_file"; then
-        sed -i "s|^${var}=.*|${var}=${val}|" "$env_file"
-      else
-        echo "${var}=${val}" >> "$env_file"
-      fi
-    fi
-  done
-  
   # Parchear credenciales de Maubot en su config.yaml (vía Docker para evitar permisos denegados)
-  local m_pass; m_pass=$(grep -m 1 "^MAUBOT_ADMIN_PASSWORD=" "$root_env" 2>/dev/null | cut -d= -f2- | tr -d '\r' || true)
-  local m_key; m_key=$(grep -m 1 "^MAUBOT_CRYPTO_PICKLE_KEY=" "$root_env" 2>/dev/null | cut -d= -f2- | tr -d '\r' || true)
-  
+  local m_pass; m_pass=$(grep -m 1 "^MAUBOT_ADMIN_PASSWORD=" "$env_file" 2>/dev/null | cut -d= -f2- | tr -d '\r' || true)
+  local m_key; m_key=$(grep -m 1 "^MAUBOT_CRYPTO_PICKLE_KEY=" "$env_file" 2>/dev/null | cut -d= -f2- | tr -d '\r' || true)
+
   if [[ -n "$m_pass" || -n "$m_key" ]]; then
     info "Inyectando credenciales en Maubot..."
     check_docker
@@ -338,6 +262,7 @@ generate_env() {
 
   return 0
 }
+
 
 ## @fn print_summary()
 ## @brief Imprime la tabla resumen de credenciales y URLs
@@ -518,6 +443,15 @@ cmd_up() {
   fi
 
   info "Levantando servicios Docker Compose (Modo: ${env_mode})..."
+  local domain; domain=$(grep -m 1 '^DOMAIN=' "${ROOT_DIR}/.env" | cut -d= -f2- | tr -d '\r' || echo "localhost")
+  if [[ "$domain" != "localhost" ]]; then
+    info "Inyectando DOMAIN=${domain} en archivos estáticos..."
+    sed -i "s/localhost/${domain}/g" "${ROOT_DIR}/src/matrix/synapse-data/homeserver.yaml" 2>/dev/null || true
+    sed -i "s/localhost/${domain}/g" "${ROOT_DIR}/src/matrix/element/config.json" 2>/dev/null || true
+    sed -i "s/localhost/${domain}/g" "${ROOT_DIR}/src/bot/base-config.yaml" 2>/dev/null || true
+    sed -i "s/localhost/${domain}/g" "${ROOT_DIR}/src/bot/config.yaml" 2>/dev/null || true
+  fi
+
   cd "${ROOT_DIR}"
   
   local compose_args="-f docker-compose.yml"

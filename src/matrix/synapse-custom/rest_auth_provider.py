@@ -9,7 +9,8 @@ class RestAuthProvider:
     def __init__(self, config, account_handler):
         self.api = account_handler
         self.endpoint = config.get("endpoint")
-        self.host_header = config.get("host_header", "localhost:8000")
+        domain = os.environ.get("DOMAIN", "localhost")
+        self.host_header = config.get("host_header", f"{domain}:8000")
 
     @staticmethod
     def parse_config(config):
@@ -25,7 +26,8 @@ class RestAuthProvider:
             localpart = user_id.split(":", 1)[0][1:]
         else:
             localpart = user_id
-            user_id = f"@{localpart}:localhost"
+            domain = os.environ.get("DOMAIN", "localhost")
+            user_id = f"@{localpart}:{domain}"
         
         payload = json.dumps({
             "user": {

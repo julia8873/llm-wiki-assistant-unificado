@@ -1,28 +1,18 @@
 import os
-import yaml
+from shared_pkg.config_loader import load_config
 from .base import GitProviderClient
 
 class GitProviderConfigError(Exception):
     pass
 
-def load_config():
+def load_config_git():
     """!
-    @brief Carga la configuración desde config.yaml.
-    @details Busca la configuración en la ruta definida por la variable de entorno
-    CONFIG_PATH y si no existe usa un fallback local.
-    
+    @brief Carga la configuración desde config.yaml con expansión de variables de entorno.
     @return dict|None Retorna la configuración como diccionario o None si falla.
     """
-    config_path = os.getenv("CONFIG_PATH", "/config/config.yaml")
     try:
-        with open(config_path, 'r') as f:
-            return yaml.safe_load(f)
-    except FileNotFoundError:
-        # Fallback para tests locales
-        local_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../config/config.yaml"))
-        if os.path.exists(local_path):
-            with open(local_path, 'r') as f:
-                return yaml.safe_load(f)
+        return load_config()
+    except Exception:
         return None
 
 def get_git_provider() -> GitProviderClient:
@@ -30,7 +20,7 @@ def get_git_provider() -> GitProviderClient:
     @brief Factoría para obtener el cliente del proveedor Git configurado.
     @return Instancia de GitProviderClient concreta.
     """
-    config = load_config()
+    config = load_config_git()
     if not config or 'git' not in config:
         raise GitProviderConfigError("Configuración 'git' no encontrada en config.yaml")
 

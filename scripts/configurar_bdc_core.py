@@ -10,18 +10,10 @@ Este script interactúa con la API REST de GitHub usando el PAT centralizado en
 """
 
 import sys
-import yaml
 import httpx
 import os
-
-def load_config():
-    """!
-    @brief Lee y procesa el archivo central de configuración config.yaml.
-    @return dict Diccionario con los parámetros de configuración (e.g. organización, API base).
-    """
-    config_path = os.path.join(os.path.dirname(__file__), '../../config/config.yaml')
-    with open(config_path, 'r') as f:
-        return yaml.safe_load(f)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../src/shared'))
+from shared_pkg.config_loader import load_config
 
 def main():
     """!

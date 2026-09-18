@@ -1,7 +1,7 @@
 from metrics_api.core.config import settings
 import os
 import httpx
-import yaml
+from shared_pkg.config_loader import load_config as _load_shared_config
 import hmac
 import hashlib
 import time
@@ -68,10 +68,8 @@ def clean_verdict_dict(d: dict) -> dict:
     return d
 
 def load_shared_config() -> Dict:
-    path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "config", "config.yaml")
     try:
-        with open(path, "r") as f:
-            return yaml.safe_load(f)
+        return _load_shared_config()
     except Exception:
         return {}
 

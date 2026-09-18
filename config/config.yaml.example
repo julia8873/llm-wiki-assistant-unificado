@@ -1,9 +1,9 @@
 servicios:
   moodle:
     nombre_contenedor: "moodle-matrix-dev-moodle-1"
-    puerto_host: 8000
-    puerto_contenedor: 8080
-    url_base: "http://localhost:8000"
+    puerto_host: ${MOODLE_PUERTO_HOST}
+    puerto_contenedor: ${MOODLE_PUERTO_CONTENEDOR}
+    url_base: "http://${DOMAIN}:${MOODLE_PUERTO_HOST}"
 
   mariadb:
     nombre_contenedor: "moodle-matrix-dev-mariadb-1"
@@ -13,62 +13,61 @@ servicios:
 
   synapse:
     nombre_contenedor: "moodle-matrix-dev-synapse-1"
-    puerto_host: 8008
-    puerto_contenedor: 8008
-    url_base: "http://localhost:8008"
-    url_interna: "http://matrix-synapse:8008"
-    nombre_servidor: "localhost"
+    puerto_host: ${SYNAPSE_PUERTO_HOST}
+    puerto_contenedor: ${SYNAPSE_PUERTO_CONTENEDOR}
+    url_base: "http://${DOMAIN}:${SYNAPSE_PUERTO_HOST}"
+    url_interna: "http://matrix-synapse:${SYNAPSE_PUERTO_CONTENEDOR}"
+    nombre_servidor: "${DOMAIN}"
 
   element:
     nombre_contenedor: "moodle-matrix-dev-element-1"
-    puerto_host: 8081
-    puerto_contenedor: 80
-    url_base: "http://localhost:8081"
+    puerto_host: ${ELEMENT_PUERTO_HOST}
+    puerto_contenedor: ${ELEMENT_PUERTO_CONTENEDOR}
+    url_base: "http://${DOMAIN}:${ELEMENT_PUERTO_HOST}"
 
   maubot:
     nombre_contenedor: "moodle-matrix-dev-maubot-1"
-    puerto_host: 29317
-    puerto_contenedor: 29316
-    url_base: "http://localhost:29317"
+    puerto_host: ${MAUBOT_PUERTO_HOST}
+    puerto_contenedor: ${MAUBOT_PUERTO_CONTENEDOR}
+    url_base: "http://${DOMAIN}:${MAUBOT_PUERTO_HOST}"
 
   mapeo_api:
     nombre_contenedor: "moodle-matrix-dev-mapeo-api-1"
-    puerto_host: 8001
-    puerto_contenedor: 8000
-    url_base: "http://localhost:8001"
+    puerto_host: ${MAPEO_API_PUERTO_HOST}
+    puerto_contenedor: ${MAPEO_API_PUERTO_CONTENEDOR}
+    url_base: "http://${DOMAIN}:${MAPEO_API_PUERTO_HOST}"
 
   docs:
     nombre_contenedor: "llm-wiki-docs"
     puerto_host: 8005
     puerto_contenedor: 8000
-    url_base: "http://localhost:8005"
+    url_base: "http://${DOMAIN}:8005"
 
   llm_server_opcional:
     activar_perfil_ollama_local: false
     nombre_contenedor: "ollama-llm-service"
     puerto_host: ${OLLAMA_PORT}
     puerto_contenedor: ${OLLAMA_PORT}
-    url_base: "http://localhost:${OLLAMA_PORT}"
+    url_base: "http://${DOMAIN}:${OLLAMA_PORT}"
 
 git:
   # Proveedor activo: "github", "gitlab" o "self_hosted"
-  proveedor_activo: "CHANGE_ME"
+  proveedor_activo: "github"
 
   # Nombre de tu usuario u organización en GitHub/GitLab
-  organizacion: "CHANGE_ME"
+  organizacion: "julia8873"
 
   # Nombre del repositorio plantilla desde el que se generarán los repos de alumnos
-  repo_plantilla: "CHANGE_ME"
+  repo_plantilla: "BdC-template"
   rama_defecto: "main"
 
   github:
     api_base_url: "https://api.github.com"
     # Token de acceso personal (PAT) clásico.
-    # IMPORTANTE: Debe tener marcado el scope principal "repo" al completo.
+    # IMPORTANTE: Necesita "repo" marcado.
     # Esto le otorga permisos de lectura/escritura de código, crear repositorios
     # a partir de la plantilla y añadir a los alumnos como colaboradores.
     # Genera uno en: https://github.com/settings/tokens
-    pat: "changeme"
     pat_env_var: "GITHUB_PAT"
 
   gitlab:
@@ -109,7 +108,7 @@ llm:
   ollama:
     modelo_defecto: "qwen3.6:35b-a3b"
     modelo_embedding: "nomic-embed-text"
-    api_base_url: "changeme"
+    api_base_url: "http://host.docker.internal:11434/v1"
     api_key_env_var: "OLLAMA_API_KEY_DUMMY"
     api_key: "ollama"
     temperatura: 0.2

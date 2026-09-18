@@ -39,10 +39,11 @@ if ($mapeo && !empty($mapeo['matrix_room_id'])) {
     // Ya existe la sala, redirigir a Element
     // Aseguramos que el usuario está dentro de la sala forzando el join
     $synapse_client = new block_bdc_synapse_admin_client();
-    $matrix_user_id = '@' . $USER->username . ':localhost';
+    $domain = getenv('DOMAIN') ?: 'localhost';
+    $matrix_user_id = '@' . $USER->username . ':' . $domain;
     $synapse_client->join_user_to_room($mapeo['matrix_room_id'], $matrix_user_id);
     
-    $element_url = getenv('ELEMENT_URL_BASE') ?: 'http://localhost:8081';
+    $element_url = getenv('ELEMENT_URL_BASE') ?: 'http://' . $domain . ':8081';
     $redirect_url = $element_url . '/#/room/' . urlencode($mapeo['matrix_room_id']);
     redirect($redirect_url);
 }
@@ -61,10 +62,11 @@ if ($lock) {
             
             // Forzamos el join
             $synapse_client = new block_bdc_synapse_admin_client();
-            $matrix_user_id = '@' . $USER->username . ':localhost';
+            $domain = getenv('DOMAIN') ?: 'localhost';
+    $matrix_user_id = '@' . $USER->username . ':' . $domain;
             $synapse_client->join_user_to_room($mapeo['matrix_room_id'], $matrix_user_id);
             
-            $element_url = getenv('ELEMENT_URL_BASE') ?: 'http://localhost:8081';
+            $element_url = getenv('ELEMENT_URL_BASE') ?: 'http://' . $domain . ':8081';
             redirect($element_url . '/#/room/' . urlencode($mapeo['matrix_room_id']));
         }
         
@@ -74,7 +76,8 @@ if ($lock) {
         // Determinamos el ID de matrix del alumno. 
         // Asumimos un mapeo simple: @user_{id}:localhost
         // Usamos el username de Moodle como ID en Matrix para asegurar la identidad.
-        $matrix_user_id = '@' . $USER->username . ':localhost'; 
+        $domain = getenv('DOMAIN') ?: 'localhost';
+        $matrix_user_id = '@' . $USER->username . ':' . $domain;
         $alias = 'bdc_u' . $userid . '_c' . $courseid . '_t' . time();
         
         // Fase 4.1: Asegurarnos de que el usuario exista en Matrix antes de invitarlo.
@@ -88,7 +91,7 @@ if ($lock) {
         $synapse_client->join_user_to_room($room_id, $matrix_user_id);
         
         // Forzar al bot a unirse a la sala mediante Synapse Admin API
-        $bot_user = getenv('MATRIX_BOT_USER') ?: '@llm_wiki_bot:localhost';
+        $bot_user = getenv('MATRIX_BOT_USER') ?: '@llm_wiki_bot:' . $domain;
         try {
             $synapse_client->join_user_to_room($room_id, $bot_user);
         } catch (\Exception $e) {
@@ -118,7 +121,7 @@ if ($lock) {
         $lock->release();
         
         // Redirigir
-        $element_url = getenv('ELEMENT_URL_BASE') ?: 'http://localhost:8081';
+        $element_url = getenv('ELEMENT_URL_BASE') ?: 'http://' . $domain . ':8081';
         redirect($element_url . '/#/room/' . urlencode($room_id));
         
     } catch (\Exception $e) {

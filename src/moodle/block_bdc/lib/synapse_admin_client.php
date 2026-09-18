@@ -53,7 +53,8 @@ class block_bdc_synapse_admin_client {
         $curl = new \curl(['ignoresecurity' => true]);
         $curl->setHeader('Authorization: Bearer ' . $this->token);
         $curl->setHeader('Content-Type: application/json');
-        $bot_user = getenv('MATRIX_BOT_USER') ?: '@llm_wiki_bot:localhost';
+        $domain = getenv('DOMAIN') ?: 'localhost';
+        $bot_user = getenv('MATRIX_BOT_USER') ?: '@llm_wiki_bot:' . $domain;
 
         // Obtener el user_id del propietario del token para no invitarle (ya es el creador de la sala).
         $whoami_curl = new \curl(['ignoresecurity' => true]);
@@ -104,7 +105,8 @@ class block_bdc_synapse_admin_client {
         $curl->setHeader('Authorization: Bearer ' . $this->token);
         $curl->setHeader('Content-Type: application/json');
 
-        $user_id = '@' . $username . ':localhost';
+        $domain = getenv('DOMAIN') ?: 'localhost';
+        $user_id = '@' . $username . ':' . $domain;
         $url = $this->baseurl . '/_synapse/admin/v2/users/' . urlencode($user_id);
 
         // Generamos un password aleatorio muy largo. Nunca será usado por el alumno

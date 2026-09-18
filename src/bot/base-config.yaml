@@ -3,9 +3,9 @@
 # Copia a moodle-matrix-dev/maubot/base-config.yaml y rellena los secretos.
 # ==============================================================================
 server:
-  hostname: "localhost"
+  hostname: "${DOMAIN}"
   port: 29317
-  public_url: "http://localhost:29317"
+  public_url: "http://${DOMAIN}:29317"
 
 # Base de datos principal de Maubot (instancias de bots, plugins, logs)
 database: "sqlite:////data/maubot.db"

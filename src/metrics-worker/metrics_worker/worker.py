@@ -5,7 +5,7 @@ import os
 import re
 import logging
 from typing import Dict, Any, List
-import yaml
+from shared_pkg.config_loader import load_config as _shared_load_config
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from metrics_worker.db import SessionLocal
@@ -19,19 +19,25 @@ logger = logging.getLogger("app")
 # Cargar configuracion: primero busca en config/config.yaml compartido,
 # con fallback al config.yaml local del worker y a variables de entorno.
 def _load_config():
-    # Ruta compartida: bdc-trazabilidad/config/config.yaml
-    shared_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "config", "config.yaml")
-    # Ruta local del worker
+    # Intentar cargador compartido (con expansión de variables de entorno)
+    try:
+        data = _shared_load_config()
+        if data:
+            return data
+    except Exception:
+        pass
+    # Fallback: ruta local del worker
     local_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.yaml")
-    for path in (shared_path, local_path):
-        try:
-            with open(path, "r") as f:
-                data = yaml.safe_load(f)
-                if data:
-                    return data
-        except Exception:
-            continue
+    try:
+        import yaml
+        with open(local_path, "r") as f:
+            data = yaml.safe_load(f)
+            if data:
+                return data
+    except Exception:
+        pass
     return {}
+
 
 _config_yaml = _load_config()
 _timings = _config_yaml.get("timings", {})

@@ -4,10 +4,10 @@
 # ==============================================================================
 homeserver:
   url: "http://matrix-synapse:8008"
-  server_name: "localhost"
+  server_name: "${DOMAIN}"
 
 bot_user:
-  mxid: "@llm_wiki_bot:localhost"
+  mxid: "@llm_wiki_bot:${DOMAIN}"
   access_token: "syt_CHANGE_ME"
 
 plugin_config:
