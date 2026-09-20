@@ -10,9 +10,6 @@ COPY ./app /code/app
 COPY ./alembic.ini /code/
 COPY ./alembic /code/alembic
 
-# Variables de entorno por defecto
-ENV MAPEO_API_TOKEN="default_token"
-
 EXPOSE 8000
 
 # Añadimos curl para el healthcheck de docker-compose
