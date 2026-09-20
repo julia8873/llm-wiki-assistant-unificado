@@ -1,4 +1,4 @@
-# LLM Wiki Assistant (Ecosistema Unificado)
+# LLM Wiki Assistant
 
 En este repositorio se conectan los servicios de Moodle, Matrix, Git, y una API para obtener métricas de las interacciones de los estudiantes con LLMs.
 
