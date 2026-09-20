@@ -1,5 +1,5 @@
-"""
-Módulo VectorStore: 
+"""!
+@brief Módulo VectorStore: 
 Gestor de base de datos vectorial. Utiliza PostgreSQL con la extensión pgvector
 para almacenar los embeddings de los fragmentos de código y realizar búsquedas 
 de similitud semántica.
@@ -49,14 +49,18 @@ class VectorStore:
             await self.pool.close()
 
     async def clear_repo(self, repo_id: str):
-        """Elimina todos los chunks de un repositorio específico antes de reindexar."""
+        """!
+        @brief Elimina todos los chunks de un repositorio específico antes de reindexar.
+        """
         if not self.pool:
             await self.connect()
         async with self.pool.acquire() as conn:
             await conn.execute("DELETE FROM document_chunks WHERE repo_id = $1", repo_id)
 
     async def add_chunks(self, repo_id: str, chunks: List[Dict[str, Any]]):
-        """Añade chunks con sus embeddings a la base de datos."""
+        """!
+        @brief Añade chunks con sus embeddings a la base de datos.
+        """
         if not self.pool:
             await self.connect()
             
@@ -74,7 +78,9 @@ class VectorStore:
             )
 
     async def search(self, repo_id: str, query_embedding: List[float], limit: int = 5) -> List[Dict[str, Any]]:
-        """Busca los chunks más similares usando distancia L2 o coseno."""
+        """!
+        @brief Busca los chunks más similares usando distancia L2 o coseno.
+        """
         if not self.pool:
             await self.connect()
             
@@ -94,7 +100,9 @@ class VectorStore:
             return chunks
 
     async def get_all_files(self, repo_id: str) -> List[str]:
-        """Obtiene la lista de todos los archivos indexados para un repositorio."""
+        """!
+        @brief Obtiene la lista de todos los archivos indexados para un repositorio.
+        """
         if not self.pool:
             return []
             

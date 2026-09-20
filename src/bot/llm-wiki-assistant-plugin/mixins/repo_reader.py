@@ -1,5 +1,5 @@
-"""
-Módulo RepoReader: 
+"""!
+@brief Módulo RepoReader: 
 Gestor de repositorios Git. Se encarga de clonar los repositorios remotos,
 leer su contenido (archivos de texto y PDFs) y procesarlos en fragmentos (chunks)
 para su posterior indexación vectorial.
@@ -54,7 +54,9 @@ class RepoReader:
         return chunks
 
     async def index_repository(self, repo_url: str, local_path: str):
-        """Lee los ficheros OKF (.md, .txt) y los guarda en pgvector."""
+        """!
+        @brief Lee los ficheros OKF (.md, .txt) y los guarda en pgvector.
+        """
         logger.info(f"Indexando repositorio: {repo_url}")
         
         okf_config = self.config.get("okf", {})
@@ -103,7 +105,9 @@ class RepoReader:
             logger.info(f"Indexados {len(chunks_to_insert)} chunks para {repo_url}")
 
     async def process_repository(self, mapeo_data: Dict[str, Any]):
-        """Flujo completo: clona/actualiza e indexa."""
+        """!
+        @brief Flujo completo: clona/actualiza e indexa.
+        """
         repo_url = mapeo_data.get('repo_url')
         official_repo_url = mapeo_data.get('official_repo_url')
         from git_utils import asegurar_repo_local
@@ -113,7 +117,9 @@ class RepoReader:
         await self.index_repository(repo_url, local_path)
 
     async def search(self, mapeo_data: Dict[str, Any], query: str, limit: int = 5) -> List[Dict[str, str]]:
-        """Busca en el repositorio usando RAG."""
+        """!
+        @brief Busca en el repositorio usando RAG.
+        """
         repo_url = mapeo_data.get('repo_url')
         query_embedding = await self.llm_client.get_embedding(query)
         results = await self.vector_store.search(repo_url, query_embedding, limit)

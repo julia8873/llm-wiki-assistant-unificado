@@ -14,19 +14,36 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from mixins.mapeo_client import MapeoClient
 
 def get_mapeo_client():
-    token = os.environ.get("MAPEO_API_TOKEN", "")
-    url = os.environ.get("MAPEO_API_URL", "http://mapeo-api:8000")
+    """!
+    @brief Inicializa el cliente para comunicarse con la API de Mapeo.
+    Requiere las variables de entorno MAPEO_API_TOKEN y MAPEO_API_URL.
+    Si no están configuradas, lanza una excepción estricta para evitar fallos silenciosos.
+    """
+    token = os.environ.get("MAPEO_API_TOKEN")
+    url = os.environ.get("MAPEO_API_URL")
+    
+    if not token:
+        raise ValueError("MAPEO_API_TOKEN no está configurado en el entorno.")
+    if not url:
+        raise ValueError("MAPEO_API_URL no está configurado en el entorno.")
+        
     return MapeoClient(url, token)
 
 logger = logging.getLogger(__name__)
 
 def sync_repo_task(matrix_room_id: str, repo_alumno_url: str, official_repo_url: str):
     """!
-    @brief Tarea síncrona que envuelve el loop asíncrono para ejecutar el job de sync.
+    @brief Tarea síncrona encolada en Redis/RQ.
+    Sirve como envoltorio (wrapper) para arrancar el bucle asíncrono de sincronización.
     """
     asyncio.run(_async_sync_repo_task(matrix_room_id, repo_alumno_url, official_repo_url))
 
 async def _async_sync_repo_task(matrix_room_id: str, repo_alumno_url: str, official_repo_url: str):
+    """!
+    @brief Flujo principal de sincronización para alumnos. Descarga el repositorio oficial,
+    copia el contenido a la carpeta material-oficial del alumno y hace push.
+    También asegura que el repositorio del alumno tiene la plantilla base (AGENTS.md).
+    """
     import urllib.parse
     safe_name = urllib.parse.quote_plus(repo_alumno_url)
     destino_local = f"/tmp/llm_wiki_repos/{safe_name}"
@@ -128,11 +145,16 @@ async def _async_sync_repo_task(matrix_room_id: str, repo_alumno_url: str, offic
 
 def init_teacher_repo_task(matrix_room_id: str, official_repo_url: str, moodle_username: str):
     """!
-    @brief Tarea síncrona que envuelve el loop asíncrono para inicializar la carpeta del profesor.
+    @brief Tarea síncrona encolada en Redis/RQ.
+    Sirve como envoltorio para arrancar el bucle asíncrono que inicializa el repositorio del profesor.
     """
     asyncio.run(_async_init_teacher_repo_task(matrix_room_id, official_repo_url, moodle_username))
 
 async def _async_init_teacher_repo_task(matrix_room_id: str, official_repo_url: str, moodle_username: str):
+    """!
+    @brief Inicializa la estructura de directorios privada (bot_data, logs, etc.) para un profesor
+    dentro de su propio repositorio oficial y hace el primer push.
+    """
     import urllib.parse
     safe_name = urllib.parse.quote_plus(official_repo_url)
     destino_local = f"/tmp/llm_wiki_repos/{safe_name}"
@@ -183,11 +205,16 @@ async def _async_init_teacher_repo_task(matrix_room_id: str, official_repo_url: 
 
 def log_interaccion_unificada_task(matrix_room_id: str, repo_alumno_url: str, official_repo_url: str, log_data: dict):
     """!
-    @brief Tarea síncrona que envuelve el loop asíncrono para registrar una interacción unificada (Fase 11.1).
+    @brief Tarea síncrona encolada en Redis/RQ.
+    Envuelve el bucle asíncrono para registrar de forma unificada una interacción (pregunta/respuesta).
     """
     asyncio.run(_async_log_interaccion_unificada_task(matrix_room_id, repo_alumno_url, official_repo_url, log_data))
 
 async def _async_log_interaccion_unificada_task(matrix_room_id: str, repo_alumno_url: str, official_repo_url: str, log_data: dict):
+    """!
+    @brief Registra los mensajes entre el alumno y el bot en el repositorio de Git en formato JSONL.
+    Aplica el filtro de PII (pseudonimización) antes de hacer el commit y notifica a la API Central.
+    """
     import urllib.parse
     import json
     import datetime

@@ -11,8 +11,8 @@ _analyzer = None
 _anonymizer = None
 
 def get_analyzer():
-    """
-    Inicializa y devuelve el motor de análisis de Presidio (AnalyzerEngine).
+    """!
+    @brief Inicializa y devuelve el motor de análisis de Presidio (AnalyzerEngine).
     Configura los modelos de NLP en español e inglés y añade un reconocedor personalizado
     para detectar NIF/NIE españoles. Usa el patrón Singleton (solo se inicializa una vez).
     """
@@ -44,8 +44,8 @@ def get_analyzer():
     return _analyzer
 
 def get_anonymizer():
-    """
-    Inicializa y devuelve el motor de anonimización de Presidio (AnonymizerEngine).
+    """!
+    @brief Inicializa y devuelve el motor de anonimización de Presidio (AnonymizerEngine).
     Usa el patrón Singleton para evitar instanciarlo múltiples veces.
     """
     global _anonymizer
@@ -61,8 +61,8 @@ _TOKEN_RE = _re.compile(r'\[[A-Z_]+_\d+\]')
 _TOKEN_PLACEHOLDER = "XXXXXXXX"
 
 def pseudonymize_text(text: str) -> Tuple[str, List[Dict[str, str]]]:
-    """
-    Detecta y pseudonimiza la Información Personal Identificable (PII) en el texto proporcionado.
+    """!
+    @brief Detecta y pseudonimiza la Información Personal Identificable (PII) en el texto proporcionado.
     Devuelve una tupla con (texto_pseudonimizado, mapeos).
     Los mapeos son una lista de diccionarios: {"token": str, "raw_value": str, "entity_type": str}
 
@@ -135,8 +135,8 @@ def pseudonymize_text(text: str) -> Tuple[str, List[Dict[str, str]]]:
     return anonymized_text, mappings
 
 def send_pii_to_vault(student_matrix_id: str, interaction_id: str, mappings: List[Dict[str, str]]):
-    """
-    Envía los mapeos de PII a la bóveda segura (vault) en el microservicio bdc-trazabilidad.
+    """!
+    @brief Envía los mapeos de PII a la bóveda segura (vault) en el microservicio bdc-trazabilidad.
     Levanta una excepción si falla, actuando como un mecanismo de seguridad (fail-safe).
     """
     if not mappings:
@@ -176,8 +176,8 @@ def verify_no_pii_residual(
     log_data: dict,
     fields: tuple = ("mensaje_alumno", "respuesta_bot")
 ) -> None:
-    """
-    DOBLE BARRERA - re-ejecutar Presidio sobre los campos de texto del payload
+    """!
+    @brief DOBLE BARRERA - re-ejecutar Presidio sobre los campos de texto del payload
     final para confirmar que no queda ninguna entidad PII sin tokenizar.
 
     Llamar ANTES de git-add/commit. Si se detecta cualquier entidad,

@@ -1,5 +1,5 @@
-"""
-Módulo MapeoClient: 
+"""!
+@brief Módulo MapeoClient: 
 Cliente HTTP encargado de comunicarse con la API Central de Mapeo.
 Permite consultar el repositorio Git asociado a una sala de Matrix específica.
 """
@@ -18,8 +18,8 @@ class MapeoClient:
         self.token = token
 
     async def get_room_mapping(self, matrix_room_id: str) -> Dict[str, Any]:
-        """
-        Devuelve el diccionario completo del mapeo para una sala Matrix específica.
+        """!
+        @brief Devuelve el diccionario completo del mapeo para una sala Matrix específica.
         Si la sala no está mapeada, levanta MapeoClientError.
         """
         headers = {}
@@ -55,8 +55,8 @@ class MapeoClient:
     import tenacity
     @tenacity.retry(stop=tenacity.stop_after_attempt(3), wait=tenacity.wait_exponential(multiplier=1, min=2, max=10))
     async def post_evento(self, matrix_room_id: str, commit_sha: str, tipo_evento: str, timestamp_str: str) -> None:
-        """
-        Envía un evento producido por el bot a mapeo-api.
+        """!
+        @brief Envía un evento producido por el bot a mapeo-api.
         Usa tenacity para reintentos en caso de fallos transitorios.
         """
         headers = {}
