@@ -7,23 +7,22 @@ from alembic import context
 import os
 import sys
 
-# Agregamos app al PYTHONPATH para importar los modelos
+# para acceder a src/api/app/db.py
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from app.db import Base, DATABASE_URL
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
+# Lee de src/api/ambelic.ini para la configuración
 config = context.config
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
+# Configurar como se ven los logs por la terminal
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+# Pasamos la estructura de las tablas para que Alembic sepa cómo deberían ser
 target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode."""
+    """Modo sin conexión: Genera las instrucciones SQL pero no las ejecuta en la base de datos."""
     url = DATABASE_URL
     context.configure(
         url=url,
@@ -36,12 +35,18 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode."""
+    """Modo con conexión: Se conecta a la base de datos de verdad y aplica los cambios."""
+
+    # coger contraseña de base de datos de 
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = DATABASE_URL
     
+    # Si se usa SQL lite
     connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
 
+    # Crea el motor de conexión a la base de datos:
+    # 1. Gestiona la comunicación de red a bajo nivel (TCP/IP) con el servidor.
+    # 2. Traduce las órdenes genéricas de Python al PostgreSQL.
     connectable = engine_from_config(
         configuration,
         prefix="sqlalchemy.",
@@ -49,6 +54,7 @@ def run_migrations_online() -> None:
         connect_args=connect_args
     )
 
+    # Se conecta y ejecuta los cambios
     with connectable.connect() as connection:
         context.configure(
             connection=connection, target_metadata=target_metadata
@@ -58,6 +64,7 @@ def run_migrations_online() -> None:
             context.run_migrations()
 
 
+# Alembic decide automáticamente si arrancar en modo offline u online
 if context.is_offline_mode():
     run_migrations_offline()
 else:
