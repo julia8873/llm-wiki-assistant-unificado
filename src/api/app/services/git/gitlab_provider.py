@@ -42,7 +42,7 @@ class GitLabProvider(GitProviderClient):
     async def crear_repo_oficial(self, nombre_asignatura: str, template_id: str = None) -> str:
         # En GitLab, primero hacemos fork y luego eliminamos la relación.
         repo_oficial = f"{nombre_asignatura}-Oficial"
-        template = template_id or self.config['git']['repo_plantilla']
+        template = template_id or self.config['git']['gitlab']['repo_plantilla']
         template_path = f"{self.org}/{template}".replace("/", "%2F")
         
         if await self.existe_repo(repo_oficial):
@@ -89,7 +89,7 @@ class GitLabProvider(GitProviderClient):
             
         # Generar a partir del template original en lugar del repo_oficial
         # para evitar copiar carpetas de otros profesores.
-        template = self.config['git']['repo_plantilla']
+        template = self.config['git']['gitlab']['repo_plantilla']
         template_path = f"{self.org}/{template}".replace("/", "%2F")
 
         async with await self._get_client() as client:

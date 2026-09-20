@@ -12,15 +12,16 @@ def base_config():
     return {
         'git': {
             'proveedor_activo': 'github',
-            'organizacion': 'test_org',
-            'repo_plantilla': 'test_template',
             'github': {
+                'organizacion': 'test_org',
+                'repo_plantilla': 'test_template',
                 'api_base_url': 'https://api.github.com',
                 'pat': 'test_pat'
             },
             'gitlab': {
                 'api_base_url': 'https://gitlab.com/api/v4',
                 'grupo_destino': 'test_group',
+                'repo_plantilla': 'test_template',
                 'token_env_var': 'GITLAB_TOKEN'
             },
             'self_hosted': {

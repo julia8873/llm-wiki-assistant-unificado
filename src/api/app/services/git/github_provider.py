@@ -12,9 +12,9 @@ class GitHubProvisionError(Exception):
 class GitHubProvider(GitProviderClient):
     def __init__(self, config: dict):
         self.config = config
-        self.org = config['git']['organizacion']
+        self.org = config['git']['github']['organizacion']
         self.api_base = config['git']['github']['api_base_url']
-        self.template_repo = config['git']['repo_plantilla']
+        self.template_repo = config['git']['github']['repo_plantilla']
         
         # Leemos el PAT del entorno o configuración
         env_var = config['git']['github'].get('pat_env_var', 'GITHUB_PAT')

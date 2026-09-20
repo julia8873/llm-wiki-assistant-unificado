@@ -10,9 +10,9 @@ from app.services.git.github_provider import GitHubProvider, GitHubProvisionErro
 def base_config():
     return {
         'git': {
-            'organizacion': 'test-org',
-            'repo_plantilla': 'test-template',
             'github': {
+                'organizacion': 'test-org',
+                'repo_plantilla': 'test-template',
                 'api_base_url': 'https://api.github.com',
                 'pat': 'test-pat-123',
                 'pat_env_var': 'GITHUB_PAT'

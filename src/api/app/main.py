@@ -141,9 +141,16 @@ async def create_mapeo(response: Response, request: Request, mapeo: MapeoCreate,
             repo_oficial_url = f"{mapeo.moodle_course_shortname}-Oficial"
             
             from app.services.git import load_config
+            from urllib.parse import urlparse
             cfg = load_config()
-            provider_domain = "github.com"
-            org = cfg['git']['organizacion']
+            provider_name = cfg['git'].get('proveedor_activo', 'github')
+            provider_config = cfg['git'].get(provider_name, {})
+            api_base = provider_config.get('api_base_url', 'https://api.github.com')
+            provider_domain = urlparse(api_base).netloc.replace('api.', '')
+            if provider_name == 'gitlab':
+                org = provider_config.get('grupo_destino')
+            else:
+                org = provider_config.get('organizacion')
             
             if mapeo.is_teacher:
                 # El profesor usa el repositorio oficial directamente, no creamos un fork

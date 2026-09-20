@@ -32,12 +32,16 @@ def main():
     profesores = sys.argv[2].split(',')
 
     config = load_config()
+    provider = config['git'].get('proveedor_activo', 'github')
+    if provider == 'gitlab':
+        org = config['git']['gitlab'].get('grupo_destino')
+    else:
+        org = config['git'][provider].get('organizacion')
+        
+    template_repo = config['git'][provider].get('repo_plantilla')
+    api_base = config['git'][provider].get('api_base_url')
     
-    org = config['github']['organizacion']
-    template_repo = config['github']['repo_plantilla']
-    api_base = config['github']['api_base_url']
-    
-    pat = config['github'].get('pat') or os.getenv('GITHUB_PAT')
+    pat = os.getenv('GITHUB_PAT')
     if not pat:
         print("Error: GITHUB_PAT no está definido en el entorno.")
         sys.exit(1)
