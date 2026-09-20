@@ -39,6 +39,7 @@ src/matrix/synapse-data/media_store/
 # Archivos basura del bot
 src/bot/trash/
 src/bot/maubot.db*
+src/bot/crypto.db*
 *.mbp
 docs/html/
 docs/latex/
