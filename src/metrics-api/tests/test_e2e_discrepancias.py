@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 
 # Configuramos la DB apuntando al host (o a postgres en docker)
 # Si lo corremos dentro de docker: postgresql://metrics_user:metrics_pass@postgres:5432/mapeo_db
-DB_URL = os.getenv("DATABASE_URL", "postgresql://metrics_user:metrics_pass@postgres:5432/mapeo_db")
+DB_URL = os.environ["DATABASE_URL"]
 
 engine = create_engine(DB_URL, connect_args={"options": "-csearch_path=metrics"})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

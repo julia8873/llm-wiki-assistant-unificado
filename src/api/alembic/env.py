@@ -41,8 +41,7 @@ def run_migrations_online() -> None:
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = DATABASE_URL
     
-    # Si se usa SQL lite
-    connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+    # Crea el motor de conexión a la base de datos:
 
     # Crea el motor de conexión a la base de datos:
     # 1. Gestiona la comunicación de red a bajo nivel (TCP/IP) con el servidor.
@@ -51,7 +50,6 @@ def run_migrations_online() -> None:
         configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
-        connect_args=connect_args
     )
 
     # Se conecta y ejecuta los cambios

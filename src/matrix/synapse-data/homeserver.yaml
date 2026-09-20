@@ -27,9 +27,14 @@ listeners:
     type: http
     x_forwarded: true
 database:
-  name: sqlite3
+  name: psycopg2
   args:
-    database: /data/homeserver.db
+    user: "${POSTGRES_USER}"
+    password: "${POSTGRES_PASSWORD}"
+    database: "${POSTGRES_DB}"
+    host: postgres
+    cp_min: 5
+    cp_max: 10
 log_config: "/data/localhost.log.config"
 media_store_path: /data/media_store
 registration_shared_secret: "@c8G+4ap+f9pkuW3lv#5WigwZ+9@qbit,cn#6y4#pN5StfIH0_"

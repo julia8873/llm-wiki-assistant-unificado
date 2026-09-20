@@ -64,6 +64,10 @@ services:
       - SYNAPSE_SERVER_NAME=${DOMAIN}
       - SYNAPSE_REPORT_STATS=no
       - PYTHONPATH=/data
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - SYNAPSE_CONFIG_ENABLE_ENV=yes
     volumes:
       - ./src/matrix/synapse-data:/data
       - ./src/matrix/synapse-custom/rest_auth_provider.py:/data/rest_auth_provider.py:ro
@@ -140,6 +144,8 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - PYTHONPATH=/shared-pkg
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    command: ["sh", "-c", "python -c \"import os, yaml; c=yaml.safe_load(open('/data/config.yaml')); c['database']=os.environ['DATABASE_URL']; c['crypto_database']=os.environ['DATABASE_URL']; yaml.dump(c, open('/tmp/config.yaml','w'))\" && exec python -m maubot -c /tmp/config.yaml"]
     ports:
       - "${MAUBOT_PUERTO_HOST}:${MAUBOT_PUERTO_CONTENEDOR}"
     volumes:

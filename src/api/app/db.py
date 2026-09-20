@@ -1,7 +1,7 @@
 """! @file db.py
 @brief Configuración de la base de datos (SQLAlchemy).
 
-Se encarga de la conexión a la base de datos local (SQLite por defecto)
+Se encarga de la conexión a la base de datos de producción (PostgreSQL)
 y de la definición del ORM para la tabla de mapeos.
 """
 
@@ -12,9 +12,7 @@ import os
 from app.core.config import settings
 
 DATABASE_URL = settings.DATABASE_URL
-is_sqlite = DATABASE_URL.startswith("sqlite")
-connect_args = {"check_same_thread": False} if is_sqlite else {}
-engine = create_engine(DATABASE_URL, echo=False, connect_args=connect_args)
+engine = create_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
@@ -58,11 +56,6 @@ class EventosBotDB(Base):
     tipo_evento = Column(String, nullable=False)
     timestamp = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-
-def create_db_and_tables():
-    if "sqlite:////data" in DATABASE_URL:
-        os.makedirs("/data", exist_ok=True)
-    # Base.metadata.create_all(bind=engine)  # Removed in favor of Alembic
 
 def get_session():
     db = SessionLocal()

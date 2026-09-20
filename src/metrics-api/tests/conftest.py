@@ -9,10 +9,7 @@ from metrics_api.db import get_session
 from metrics_api.models import Base
 
 # Usamos PostgreSQL para tests de integración
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "postgresql://metrics_user:metrics_pass@postgres:5432/mapeo_db"
-)
+DATABASE_URL = os.environ["DATABASE_URL"]
 
 connect_args = {}
 if "postgresql" in DATABASE_URL:

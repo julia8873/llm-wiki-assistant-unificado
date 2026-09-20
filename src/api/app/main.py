@@ -1,8 +1,8 @@
 """! @file main.py
 @brief Aplicación principal FastAPI para el Mapeo de Salas y Repositorios.
 
-Punto de entrada de la API que coordina Moodle, Matrix (Synapse) y GitHub,
-almacenando el estado en una base de datos local de SQLite/MariaDB.
+Punto de entrada de la API que coordina Moodle, Matrix (Synapse) y GitHub, 
+almacenando el estado en PostgreSQL.
 """
 
 import os
@@ -18,7 +18,7 @@ import redis
 from rq import Queue, Retry
 
 from .models import MapeoCreate, MapeoRead, MapeoEstado, CursoCreate, EventoCreate, EventoRead
-from .db import create_db_and_tables, get_session, MapeoDB, EventosBotDB
+from .db import get_session, MapeoDB, EventosBotDB
 from .services.git import get_git_provider, GitProviderConfigError
 from .core.config import settings
 
@@ -85,7 +85,6 @@ def on_startup():
     token = settings.MAPEO_API_TOKEN
     if not token or token in ("default_token", "changeme"):
         raise RuntimeError("FATAL: MAPEO_API_TOKEN no está configurado correctamente. Revisa tu fichero .env.")
-    create_db_and_tables()
 
 @app.get("/v1/health", status_code=200)
 @app.get("/health", status_code=200, deprecated=True)

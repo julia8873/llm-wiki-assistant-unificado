@@ -17,10 +17,7 @@ METRICS_API_URL = "http://localhost:8000"
 INTERNAL_TOKEN = os.getenv("INTERNAL_SERVICE_TOKEN", "dev_internal_token")
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev_secret_key_for_local_testing_only")
 JWT_ALGORITHM = "HS256"
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://metrics_user:metrics_pass@postgres:5432/mapeo_db"
-)
+DATABASE_URL = os.environ["DATABASE_URL"]
 PII_SECRET_KEY = os.getenv("PII_SECRET_KEY", "")
 
 

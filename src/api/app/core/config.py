@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     """
 
     # Variables que buscarán en el archivo .env:
-    DATABASE_URL: str = "sqlite:////data/mapeos.db"
+    DATABASE_URL: str
     MAPEO_API_TOKEN: str
     ENVIRONMENT: str = "local"
     PUBLIC_API_URL: str | None = None
