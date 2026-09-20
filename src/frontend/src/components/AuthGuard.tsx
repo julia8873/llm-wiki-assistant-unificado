@@ -8,8 +8,6 @@ export const AuthGuard: React.FC = () => {
 
   useEffect(() => {
     if (!token) {
-      // Save only the path to sessionStorage as requested by user
-      // No state or sensitive data
       sessionStorage.setItem('returnPath', location.pathname);
     }
   }, [token, location]);
@@ -23,7 +21,7 @@ export const AuthGuard: React.FC = () => {
 
 export const RoleGuard: React.FC<{ requireTeacher?: boolean }> = ({ requireTeacher }) => {
   const { user } = useAuth();
-  
+
   if (requireTeacher && !user?.is_teacher) {
     return (
       <div className="container mt-8">

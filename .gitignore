@@ -43,3 +43,29 @@ src/bot/crypto.db*
 *.mbp
 docs/html/
 docs/latex/
+
+# ==============================================================================
+# REGLAS DEL FRONTEND
+# ==============================================================================
+# Logs específicos de Node
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Directorios de dependencias y compilación
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Archivos específicos de entornos JS/TS
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Reportes de Tests Automáticos de Playwright
+playwright-report/
+test-results/

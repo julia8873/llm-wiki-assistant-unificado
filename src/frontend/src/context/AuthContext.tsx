@@ -18,7 +18,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isInitializing, setIsInitializing] = useState(true);
   const [user, setUser] = useState<UserToken | null>(null);
 
-  // Initialize from API /refresh on startup
+  // Inicializar desde la API /refresh al arrancar
   useEffect(() => {
     const initializeAuth = async () => {
       try {
@@ -43,9 +43,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = (newToken: string) => {
     try {
-      // NOTA DE SEGURIDAD: El payload decodificado en cliente es para UX únicamente
-      // (decidir qué menús mostrar). Toda decisión de autorización real se revalida
-      // en el backend (verify_token) validando la firma del JWT en cada request.
       const decoded = jwtDecode<UserToken>(newToken);
       setApiToken(newToken);
       setToken(newToken);
@@ -59,21 +56,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Si el usuario es expulsado mid-session (por ej. 401), preservamos la ruta actual
     // para que pueda regresar tras loguearse de nuevo.
     sessionStorage.setItem('returnPath', window.location.pathname);
-    
-    // Attempt to notify server to revoke token
-    fetch(`${API_URL}/logout`, { method: 'POST', credentials: 'include' }).catch(() => {});
-    
+
+    fetch(`${API_URL}/logout`, { method: 'POST', credentials: 'include' }).catch(() => { });
+
     setApiToken(null);
     setToken(null);
     setUser(null);
   };
 
-  // Monitor expiration
+  // Monitorizar la caducidad (expiración)
   useEffect(() => {
     if (user) {
       const expTime = user.exp * 1000;
       const timeToExpire = expTime - Date.now();
-      
+
       if (timeToExpire <= 0) {
         logout();
       } else {
@@ -91,20 +87,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } catch (e) {
             logout();
           }
-        }, Math.max(0, timeToExpire - 5000)); // Refresh 5 seconds before expiration
+        }, Math.max(0, timeToExpire - 5000)); // Refrescar 5 segundos antes de que caduque
         return () => clearTimeout(timer);
       }
     }
   }, [user]);
 
-  // Listen for global unauthorized events from apiClient
+  // Escuchar eventos globales de no autorizado desde apiClient
   useEffect(() => {
     const handleUnauthorized = () => {
       logout();
     };
-    
+
     window.addEventListener('auth-unauthorized', handleUnauthorized);
-    
+
     return () => {
       window.removeEventListener('auth-unauthorized', handleUnauthorized);
     };

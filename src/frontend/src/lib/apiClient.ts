@@ -1,6 +1,6 @@
 import { API_URL } from './api';
 
-// In-memory token storage (never touches localStorage or sessionStorage)
+// Almacenamiento del token en memoria
 let currentAccessToken: string | null = null;
 
 export const setApiToken = (token: string | null) => {
@@ -8,10 +8,10 @@ export const setApiToken = (token: string | null) => {
 };
 
 export const apiClient = async (endpoint: string, options: RequestInit = {}) => {
-  // Use absolute URL if starting with http, else prepend API_URL
+  // Usar URL absoluta si empieza con http, de lo contrario concatenar con API_URL
   let url = endpoint;
   if (!endpoint.startsWith('http')) {
-    // Make sure we handle slashes correctly
+    // Asegurar que se manejan correctamente las barras inclinadas (slashes) en las rutas
     const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     url = `${API_URL}${path}`;
   }
