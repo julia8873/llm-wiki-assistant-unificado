@@ -7,11 +7,15 @@ from presidio_anonymizer import AnonymizerEngine
 
 logger = logging.getLogger(__name__)
 
-# Initialize engines lazily to avoid heavy loading if not needed immediately
 _analyzer = None
 _anonymizer = None
 
 def get_analyzer():
+    """
+    Inicializa y devuelve el motor de análisis de Presidio (AnalyzerEngine).
+    Configura los modelos de NLP en español e inglés y añade un reconocedor personalizado
+    para detectar NIF/NIE españoles. Usa el patrón Singleton (solo se inicializa una vez).
+    """
     global _analyzer
     if _analyzer is None:
         from presidio_analyzer.nlp_engine import NlpEngineProvider
@@ -25,7 +29,7 @@ def get_analyzer():
         nlp_engine = provider.create_engine()
         _analyzer = AnalyzerEngine(nlp_engine=nlp_engine, supported_languages=["es", "en"])
         
-        # Add custom recognizer for ES_NIF_NIE
+        # Añadir reconocedor personalizado para NIF/NIE español
         nif_pattern = Pattern(
             name="nif_nie",
             regex=r"\b([XYZ]\d{7,8}[A-Z]|\d{8}[A-Z])\b",
@@ -40,6 +44,10 @@ def get_analyzer():
     return _analyzer
 
 def get_anonymizer():
+    """
+    Inicializa y devuelve el motor de anonimización de Presidio (AnonymizerEngine).
+    Usa el patrón Singleton para evitar instanciarlo múltiples veces.
+    """
     global _anonymizer
     if _anonymizer is None:
         _anonymizer = AnonymizerEngine()
@@ -54,20 +62,20 @@ _TOKEN_PLACEHOLDER = "XXXXXXXX"
 
 def pseudonymize_text(text: str) -> Tuple[str, List[Dict[str, str]]]:
     """
-    Detects and pseudonymizes PII in the given text.
-    Returns a tuple of (pseudonymized_text, mappings)
-    Where mappings is a list of dicts: {"token": str, "raw_value": str, "entity_type": str}
+    Detecta y pseudonimiza la Información Personal Identificable (PII) en el texto proporcionado.
+    Devuelve una tupla con (texto_pseudonimizado, mapeos).
+    Los mapeos son una lista de diccionarios: {"token": str, "raw_value": str, "entity_type": str}
 
-    Tokens already present in the text (e.g. [PERSON_1] from a previous pass)
-    are temporarily masked before analysis so SpaCy does not re-detect them
-    as PII — preventing false positives in the double-barrier check.
+    Los tokens que ya están presentes en el texto (ej. [PERSON_1] de una pasada anterior)
+    se enmascaran temporalmente antes del análisis para que SpaCy no vuelva a detectarlos
+    como PII, evitando así falsos positivos en el chequeo de doble barrera.
     """
     if not text:
         return text, []
 
     analyzer = get_analyzer()
 
-    # ── Pre-procesado: enmascarar tokens existentes ────────────────────────
+    # Pre-procesado: enmascarar tokens existentes
     # Guardar las posiciones y valores originales de los tokens ya presentes
     existing_tokens = []
     masked_text = text
@@ -81,7 +89,6 @@ def pseudonymize_text(text: str) -> Tuple[str, List[Dict[str, str]]]:
         masked_text = masked_text[:start] + placeholder + masked_text[end:]
         existing_tokens.append((start, start + len(placeholder), original))
         # offset no cambia porque reemplazamos exactamente la misma longitud
-    # ──────────────────────────────────────────────────────────────────────
 
     results = analyzer.analyze(
         text=masked_text,
@@ -102,12 +109,12 @@ def pseudonymize_text(text: str) -> Tuple[str, List[Dict[str, str]]]:
     if not results:
         return text, []
 
-    # Sort by start index descending to replace from end to start
+    # Ordenar por índice de inicio de forma descendente para reemplazar de final a principio (evita desplazar índices)
     results = sorted(results, key=lambda x: x.start, reverse=True)
 
     mappings = []
     counters = {}
-    anonymized_text = text  # Trabajar sobre el texto ORIGINAL (con tokens, no enmascarado)
+    anonymized_text = text  # Trabajar sobre el texto original (con tokens, no enmascarado)
 
     for res in results:
         entity_type = res.entity_type
@@ -129,8 +136,8 @@ def pseudonymize_text(text: str) -> Tuple[str, List[Dict[str, str]]]:
 
 def send_pii_to_vault(student_matrix_id: str, interaction_id: str, mappings: List[Dict[str, str]]):
     """
-    Sends the PII mappings to the secure vault in bdc-trazabilidad.
-    Raises an exception if it fails (fail-safe).
+    Envía los mapeos de PII a la bóveda segura (vault) en el microservicio bdc-trazabilidad.
+    Levanta una excepción si falla, actuando como un mecanismo de seguridad (fail-safe).
     """
     if not mappings:
         return
@@ -139,7 +146,7 @@ def send_pii_to_vault(student_matrix_id: str, interaction_id: str, mappings: Lis
     if not internal_token:
         raise ValueError("INTERNAL_SERVICE_TOKEN not configured for PII guard.")
 
-    metrics_api_url = os.getenv("METRICS_API_URL", "http://bdc-trazabilidad-metrics-api-1:8000")
+    metrics_api_url = os.getenv("METRICS_API_URL")
     if not metrics_api_url:
         raise ValueError("METRICS_API_URL not configured for PII guard.")
         
@@ -161,7 +168,7 @@ def send_pii_to_vault(student_matrix_id: str, interaction_id: str, mappings: Lis
         resp.raise_for_status()
     except Exception as e:
         logger.error(f"Failed to send PII to vault: {e}")
-        # We must fail the commit flow if we can't secure the PII
+        # Debemos abortar el flujo de commit si no podemos asegurar la PII en la bóveda
         raise RuntimeError("Fail-safe: Could not store PII securely, aborting sync.") from e
 
 
@@ -170,13 +177,12 @@ def verify_no_pii_residual(
     fields: tuple = ("mensaje_alumno", "respuesta_bot")
 ) -> None:
     """
-    DOBLE BARRERA — re-ejecutar Presidio sobre los campos de texto del payload
-    final para confirmar que NO queda ninguna entidad PII sin tokenizar.
+    DOBLE BARRERA - re-ejecutar Presidio sobre los campos de texto del payload
+    final para confirmar que no queda ninguna entidad PII sin tokenizar.
 
     Llamar ANTES de git-add/commit. Si se detecta cualquier entidad,
     se lanza RuntimeError y el commit nunca llega a crearse en local.
 
-    Esta función es pura y testeable de forma aislada.
     """
     for field in fields:
         value = log_data.get(field)

@@ -1,3 +1,9 @@
+"""
+Módulo VectorStore: 
+Gestor de base de datos vectorial. Utiliza PostgreSQL con la extensión pgvector
+para almacenar los embeddings de los fragmentos de código y realizar búsquedas 
+de similitud semántica.
+"""
 import asyncpg
 import logging
 from typing import List, Dict, Any, Tuple

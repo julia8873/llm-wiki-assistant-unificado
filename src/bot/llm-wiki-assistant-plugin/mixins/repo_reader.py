@@ -1,3 +1,9 @@
+"""
+Módulo RepoReader: 
+Gestor de repositorios Git. Se encarga de clonar los repositorios remotos,
+leer su contenido (archivos de texto y PDFs) y procesarlos en fragmentos (chunks)
+para su posterior indexación vectorial.
+"""
 import os
 import asyncio
 import logging
@@ -157,7 +163,7 @@ class RepoReader:
                     else:
                         shutil.copy2(s, d)
             
-            # Asegurar carpetas clave por si Git las ignoro al estar vacias y forzar su trackeo
+            # Asegurar carpetas clave por si Git las ignoro al estar vacias y forzar su seguimiento
             from git_utils import asegurar_estructura_okf
             asegurar_estructura_okf(teacher_dir_path)
         
@@ -278,7 +284,7 @@ class RepoReader:
         with open(log_path, "a", encoding="utf-8") as f:
             f.write(log_entry)
             
-        # 7. Comitear a Github
+        # 7. Commit a Github
         await self._run_git_command("git add .", local_path)
         await self._run_git_command('git config user.email "bot@llm-wiki.com"', local_path)
         await self._run_git_command('git config user.name "LLM Wiki Bot"', local_path)

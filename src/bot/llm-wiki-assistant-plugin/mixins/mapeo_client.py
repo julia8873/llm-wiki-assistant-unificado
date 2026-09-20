@@ -1,3 +1,8 @@
+"""
+Módulo MapeoClient: 
+Cliente HTTP encargado de comunicarse con la API Central de Mapeo.
+Permite consultar el repositorio Git asociado a una sala de Matrix específica.
+"""
 import httpx
 import logging
 from typing import Dict, Any, Tuple

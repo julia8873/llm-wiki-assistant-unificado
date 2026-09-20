@@ -21,6 +21,7 @@ class LLMClient:
         raise NotImplementedError("Subclasses must implement get_response")
         
     async def get_embedding(self, text: str) -> list[float]:
+        """Transforma un texto en una lista de números (vector/embedding) para que la IA pueda calcular similitudes semánticas."""
         raise NotImplementedError("Subclasses must implement get_embedding")
 
 class OpenAICompatibleClient(LLMClient):
@@ -276,7 +277,7 @@ def get_llm_client(config: Dict[str, Any]) -> LLMClient:
         
     provider_config = llm_config[provider_name]
     
-    if provider_name in ["openai", "ollama", "ugr"]:
+    if provider_name in ["openai", "ollama"]:
         return OpenAICompatibleClient(provider_config)
     elif provider_name == "gemini":
         return GeminiClient(provider_config)
