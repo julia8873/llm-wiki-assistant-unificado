@@ -10,8 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from metrics_worker.db import SessionLocal
 from metrics_worker.models import EventoSync, DiscrepanciaAuditoria, Interaccion
-from shared_pkg.okf_contract import COMMIT_MSG_INGEST, COMMIT_MSG_REVERT, COMMIT_MSG_SYNC, COMMIT_MSG_LOG
-
+from shared_pkg.okf_contract import COMMIT_MSG_INGEST, COMMIT_MSG_REVERT, COMMIT_MSG_SYNC, COMMIT_MSG_LOG, COMMIT_MSG_INTERACCION
 # Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("app")
@@ -73,9 +72,18 @@ class SyncEventWorker:
         self.check_config()
 
     def check_config(self):
+        git_config = _config_yaml.get("git", {})
+        self.proveedor_activo = git_config.get("proveedor_activo", "github")
+        
         self.github_token = settings.github_token
-        if not self.use_mock and not self.github_token:
-            raise MissingCredentialsError("Fallo fail-fast: MOCK_SERVICES=false pero no se proporcionó GITHUB_TOKEN.")
+        self.gitlab_token = settings.gitlab_token
+        self.self_hosted_token = settings.git_self_hosted_token
+        
+        if not self.use_mock:
+            if self.proveedor_activo == "github" and not self.github_token:
+                raise MissingCredentialsError("Fallo fail-fast: MOCK_SERVICES=false pero no se proporcionó GITHUB_TOKEN.")
+            if self.proveedor_activo == "gitlab" and not self.gitlab_token:
+                raise MissingCredentialsError("Fallo fail-fast: MOCK_SERVICES=false pero no se proporcionó GITLAB_TOKEN.")
 
     # ---------------------------------------------------------
     # BUCLE 1: CONSUMIDOR DE FEED (Alta frecuencia)
@@ -182,15 +190,26 @@ class SyncEventWorker:
 
     async def _get_all_commits(self, owner: str, repo: str, since: str = None) -> List[Dict[str, Any]]:
         commits = []
-        url = f"https://api.github.com/repos/{owner}/{repo}/commits"
-        if since:
-            url += f"?since={since}"
+        if self.proveedor_activo == "self_hosted":
+            logger.warning("Auditoria para self_hosted pendiente de definición (OSL). Ignorando.")
+            return []
             
-        headers = {
-            "Accept": "application/vnd.github.v3+json"
-        }
-        if self.github_token:
-            headers["Authorization"] = f"Bearer {self.github_token}"
+        is_gitlab = (self.proveedor_activo == "gitlab")
+        
+        if is_gitlab:
+            url = f"{settings.gitlab_api_base_url}/projects/{owner}%2F{repo}/repository/commits"
+            if since:
+                url += f"?since={since}"
+            headers = {}
+            if self.gitlab_token:
+                headers["Authorization"] = f"Bearer {self.gitlab_token}"
+        else:
+            url = f"{settings.github_api_base_url}/repos/{owner}/{repo}/commits"
+            if since:
+                url += f"?since={since}"
+            headers = {"Accept": "application/vnd.github.v3+json"}
+            if self.github_token:
+                headers["Authorization"] = f"Bearer {self.github_token}"
         
         async with httpx.AsyncClient() as client:
             while url:
@@ -212,7 +231,18 @@ class SyncEventWorker:
                 page_commits = resp.json()
                 if not page_commits:
                     break
-                commits.extend(page_commits)
+                    
+                if is_gitlab:
+                    for c in page_commits:
+                        commits.append({
+                            "sha": c.get("id"),
+                            "commit": {
+                                "author": {"date": c.get("created_at")},
+                                "message": c.get("message", "")
+                            }
+                        })
+                else:
+                    commits.extend(page_commits)
                 
                 link_header = resp.headers.get("Link", "")
                 url = None
@@ -247,10 +277,16 @@ class SyncEventWorker:
                 if not repo_url:
                     continue
                     
-                match = re.search(r"github\.com/([^/]+)/([^/.]+)", repo_url)
-                if not match:
+                from urllib.parse import urlparse
+                parsed = urlparse(repo_url)
+                path = parsed.path.strip('/')
+                if path.endswith('.git'):
+                    path = path[:-4]
+                parts = path.split('/')
+                if len(parts) < 2:
                     continue
-                owner, repo = match.groups()
+                owner = parts[-2]
+                repo = parts[-1]
                 m_user_id = mapeo.get("moodle_user_id")
                 m_course_id = mapeo.get("moodle_course_id")
                 
@@ -285,7 +321,7 @@ class SyncEventWorker:
                             pass
                     
                     commit_msg = commit.get("commit", {}).get("message", "")
-                    from shared_pkg.okf_contract import COMMIT_MSG_INTERACCION
+
                     if not (commit_msg.startswith(COMMIT_MSG_INGEST) or 
                             commit_msg.startswith(COMMIT_MSG_REVERT) or 
                             commit_msg.startswith(COMMIT_MSG_SYNC) or
