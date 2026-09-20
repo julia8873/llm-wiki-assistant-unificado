@@ -10,15 +10,7 @@ server:
 # Base de datos principal de Maubot (instancias de bots, plugins, logs)
 database: "sqlite:////data/maubot.db"
 
-# ------------------------------------------------------------------------------
-# Cifrado E2EE (Olm/Megolm) — REQUERIDO en producción
-# ------------------------------------------------------------------------------
-# El bot participa en salas cifradas como un dispositivo Matrix más.
-# Maubot persiste su cuenta Olm (claves públicas/privadas) en `account_storage`.
-# `pickle_key` cifra ese store en disco: sin esta clave, el fichero .db robado
-# es ilegible. Genera un valor aleatorio seguro, por ejemplo con:
-#   python3 -c "import secrets; print(secrets.token_hex(32))"
-# NUNCA uses el mismo pickle_key en dos instancias distintas del bot.
+# Se sobreescribirá con la variable MAUBOT_CRYPTO_PICKLE_KEY definida en el .env
 crypto:
   pickle_key: "CHANGE_ME_GENERATE_WITH: python3 -c \"import secrets; print(secrets.token_hex(32))\""
   account_storage: "sqlite:////data/crypto.db"
@@ -26,6 +18,6 @@ crypto:
 plugin_system:
   directory: "/data/plugins"
 
-# Contraseña del administrador de la interfaz web de Maubot
+# Contraseña del admin web de Maubot (sobrescrita por MAUBOT_ADMIN_PASSWORD en el .env)
 admins:
   admin: "CHANGE_ME_PASSWORD"

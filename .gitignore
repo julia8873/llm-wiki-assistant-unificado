@@ -2,6 +2,8 @@
 .env
 *.env
 config/config.yaml
+src/bot/config.yaml
+src/bot/base-config.yaml
 
 # Archivos de registro y copias de seguridad
 *.log

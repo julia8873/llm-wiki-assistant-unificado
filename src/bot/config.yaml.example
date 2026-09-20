@@ -8,26 +8,26 @@ homeserver:
 
 bot_user:
   mxid: "@llm_wiki_bot:${DOMAIN}"
-  access_token: "syt_CHANGE_ME"
+  access_token: "${BOT_ACCESS_TOKEN}"
 
 plugin_config:
-  github_pat: "ghp_CHANGE_ME"
-  github_org: "julia8873"
-  default_branch: "main"
+  github_pat: "${GITHUB_PAT}"
+  github_org: "${GITHUB_ORG}"
+  default_branch: "${GITHUB_DEFAULT_BRANCH}"
 
-  # Proveedor LLM activo: "openai" (defecto) | "gemini" | "ollama"
-  llm_provider: "openai"
+  # Proveedor LLM activo: "openai" | "gemini" | "ollama"
+  llm_provider: "${LLM_PROVIDER}"
 
-  openai_api_key: "sk-CHANGE_ME"
+  openai_api_key: "${OPENAI_API_KEY}"
   openai_base_url: "https://api.openai.com/v1"
-  openai_model: "gpt-4o-mini"
+  openai_model: "${OPENAI_MODEL}"
 
-  gemini_api_key: "AIzaSy_CHANGE_ME"
+  gemini_api_key: "${GEMINI_API_KEY}"
   gemini_base_url: "https://generativelanguage.googleapis.com/v1beta"
-  gemini_model: "gemini-3.5-flash"
+  gemini_model: "${GEMINI_MODEL}"
 
-  ollama_base_url: "http://ollama-llm-service:${OLLAMA_PORT}"
-  ollama_model: "llama3"
+  ollama_base_url: "${OLLAMA_BASE_URL}"
+  ollama_model: "${OLLAMA_MODEL}"
 
   moodle_api_url: "http://moodle-matrix-dev-moodle-1:8000"
-  moodle_wstoken: "CHANGE_ME"
+  moodle_wstoken: "${MOODLE_WSTOKEN}"
