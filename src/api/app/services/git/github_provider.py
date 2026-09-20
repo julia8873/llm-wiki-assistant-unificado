@@ -1,3 +1,10 @@
+"""
+Este archivo contiene toda la lógica necesaria para comunicarse con la API de GitHub.
+
+Implementa las funciones necesarias para crear repositorios, registrar webhooks (avisos automáticos),
+y añadir estudiantes a sus repositorios.
+"""
+
 import os
 import httpx
 import logging
@@ -10,6 +17,10 @@ class GitHubProvisionError(Exception):
     pass
 
 class GitHubProvider(GitProviderClient):
+    """
+    Clase que gestiona la comunicación con GitHub. 
+    Se encarga de crear repositorios para profesores y alumnos, y de configurarlos.
+    """
     def __init__(self, config: dict):
         self.config = config
         self.org = config['git']['github']['organizacion']
@@ -29,15 +40,25 @@ class GitHubProvider(GitProviderClient):
         }
 
     async def _get_client(self) -> httpx.AsyncClient:
+        """
+        Crea y devuelve un cliente HTTP configurado con las credenciales de GitHub para hacer peticiones.
+        """
         return httpx.AsyncClient(base_url=self.api_base, headers=self.headers)
 
     async def existe_repo(self, repo_url_or_name: str) -> bool:
+        """
+        Comprueba si un repositorio ya existe en la organización de GitHub.
+        """
         repo_name = repo_url_or_name.split('/')[-1].replace('.git', '')
         async with await self._get_client() as client:
             res = await client.get(f"/repos/{self.org}/{repo_name}")
             return res.status_code == 200
 
     async def crear_repo_oficial(self, nombre_asignatura: str, template_id: str = None) -> str:
+        """
+        Crea el repositorio oficial a partir de una plantilla base.
+        Si ya existe, devuelve su dirección de clonado sin dar error.
+        """
         repo_oficial = f"{nombre_asignatura}-Oficial"
         template = template_id or self.template_repo
 
@@ -74,6 +95,10 @@ class GitHubProvider(GitProviderClient):
                 raise GitHubProvisionError(f"Error al generar {self.org}/{repo_oficial}: HTTP {gen_res.status_code}")
 
     async def registrar_webhook(self, repo_url: str) -> None:
+        """
+        Configura GitHub para que avise automáticamente (enviando una petición a nuestra API)
+        cada vez que alguien suba código nuevo (un evento 'push') al repositorio.
+        """
         repo_name = repo_url.split('/')[-1].replace('.git', '')
         
         target_url = settings.PUBLIC_API_URL
@@ -107,6 +132,9 @@ class GitHubProvider(GitProviderClient):
                 logger.info(f"Successfully registered webhook for {repo_name} pointing to {webhook_url}")
 
     async def marcar_como_template(self, repo_url: str) -> None:
+        """
+        Configura un repositorio normal para que actúe como plantilla (Template).
+        """
         repo_name = repo_url.split('/')[-1].replace('.git', '')
         async with await self._get_client() as client:
             res = await client.patch(f"/repos/{self.org}/{repo_name}", json={"is_template": True})
@@ -114,7 +142,10 @@ class GitHubProvider(GitProviderClient):
                 logger.warning(f"No se pudo marcar {repo_name} como template (HTTP {res.status_code})")
 
     async def generar_repo_alumno(self, nombre_repo: str, repo_oficial_url: str) -> str:
-        # Generar a partir del template original en lugar del repo_oficial
+        """
+        Crea una copia exacta (fork) de la plantilla base para un alumno específico.
+        """
+        # Genera a partir del template original en lugar del repo_oficial
         # para evitar copiar carpetas de otros profesores.
         template = self.template_repo
         
@@ -143,12 +174,16 @@ class GitHubProvider(GitProviderClient):
                 raise GitHubProvisionError(f"Error al aprovisionar {self.org}/{nombre_repo}: HTTP {gen_res.status_code} {gen_res.text}")
 
     async def crear_commit_archivo(self, repo_url: str, path: str, content: str, message: str) -> str:
+        """
+        Sube o actualiza un archivo específico dentro de un repositorio.
+        Si el archivo ya existe, añade el nuevo texto al final del archivo original.
+        """
         repo_name = repo_url.split('/')[-1].replace('.git', '')
         
         import base64
         
         async with await self._get_client() as client:
-            # Check if file exists to get its SHA and current content
+
             file_res = await client.get(f"/repos/{self.org}/{repo_name}/contents/{path}")
             
             final_content = content
@@ -156,7 +191,6 @@ class GitHubProvider(GitProviderClient):
             if file_res.status_code == 200:
                 file_data = file_res.json()
                 sha = file_data["sha"]
-                # Decode existing content and append new content
                 existing_content = base64.b64decode(file_data["content"]).decode('utf-8')
                 final_content = existing_content + content
                 
@@ -180,6 +214,9 @@ class GitHubProvider(GitProviderClient):
                 raise GitHubProvisionError(f"Failed to create/update file {path} in {repo_name}: HTTP {put_res.status_code} {put_res.text}")
 
     async def añadir_colaborador(self, repo_url_or_name: str, username: str, permission: str = "maintain") -> None:
+        """
+        Invita a un usuario (alumno) a un repositorio y le da los permisos necesarios.
+        """
         repo_name = repo_url_or_name.split('/')[-1].replace('.git', '')
         async with await self._get_client() as client:
             res = await client.put(

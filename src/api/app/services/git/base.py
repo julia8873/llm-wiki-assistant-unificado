@@ -1,5 +1,13 @@
 from abc import ABC, abstractmethod
 
+"""
+Módulo que define la interfaz base para interactuar con proveedores Git
+
+Define el método abstracto GitProviderClient que será implementado por cada proveedor concreto
+(GitHub, GitLab, etc.)
+
+"""
+
 class GitProviderClient(ABC):
     """!
     @brief Interfaz base para los clientes de proveedores Git.

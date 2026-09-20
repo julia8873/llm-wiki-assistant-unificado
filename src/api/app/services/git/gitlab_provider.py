@@ -1,3 +1,10 @@
+"""
+Este archivo contiene toda la lógica necesaria para comunicarse con la API de GitLab.
+
+Implementa las funciones necesarias para crear repositorios, registrar webhooks (avisos automáticos),
+y añadir estudiantes a sus repositorios.
+"""
+
 import os
 import httpx
 import logging
@@ -10,6 +17,10 @@ class GitLabProvisionError(Exception):
     pass
 
 class GitLabProvider(GitProviderClient):
+    """
+    Clase que gestiona la comunicación con GitLab. 
+    Se encarga de crear repositorios para profesores y alumnos, y de configurarlos.
+    """
     def __init__(self, config: dict):
         self.config = config
         self.org = config['git']['gitlab']['grupo_destino']
@@ -30,9 +41,15 @@ class GitLabProvider(GitProviderClient):
         }
 
     async def _get_client(self) -> httpx.AsyncClient:
+        """
+        Crea y devuelve un cliente HTTP configurado con las credenciales de GitLab para hacer peticiones.
+        """
         return httpx.AsyncClient(base_url=self.api_base, headers=self.headers)
 
     async def existe_repo(self, repo_url_or_name: str) -> bool:
+        """
+        Comprueba si un repositorio ya existe en el grupo de GitLab.
+        """
         repo_name = repo_url_or_name.split('/')[-1].replace('.git', '')
         project_path = f"{self.org}/{repo_name}".replace("/", "%2F")
         async with await self._get_client() as client:
@@ -40,6 +57,10 @@ class GitLabProvider(GitProviderClient):
             return res.status_code == 200
 
     async def crear_repo_oficial(self, nombre_asignatura: str, template_id: str = None) -> str:
+        """
+        Crea el repositorio oficial a partir de una plantilla base.
+        Si ya existe, devuelve su dirección de clonado sin dar error.
+        """
         # En GitLab, primero hacemos fork y luego eliminamos la relación.
         repo_oficial = f"{nombre_asignatura}-Oficial"
         template = template_id or self.config['git']['gitlab']['repo_plantilla']
@@ -52,7 +73,6 @@ class GitLabProvider(GitProviderClient):
         async with await self._get_client() as client:
             logger.info(f"Haciendo fork de {template_path} a {repo_oficial}...")
             # En GitLab necesitamos el ID del namespace destino para hacer fork, o pasarlo en los params
-            # Para simplificar, pasaremos el namespace_path
             res = await client.post(
                 f"/projects/{template_path}/fork",
                 json={
@@ -78,11 +98,16 @@ class GitLabProvider(GitProviderClient):
                 raise GitLabProvisionError(f"Error al hacer fork (GitLab): {res.status_code} {res.text}")
 
     async def marcar_como_template(self, repo_url: str) -> None:
-        # GitLab CE/EE gestiona los templates a nivel de instancia o de grupo.
-        # En la API normal no hay un "is_template" bool al estilo GitHub.
+        """
+        Configura un repositorio normal para que actúe como plantilla (Template).
+        """
+        # Gitlab no tiene templates como github
         pass
 
     async def generar_repo_alumno(self, nombre_repo: str, repo_oficial_url: str) -> str:
+        """
+        Crea una copia exacta (fork) de la plantilla base para un alumno específico.
+        """
         if await self.existe_repo(nombre_repo):
             logger.info(f"El repositorio {self.org}/{nombre_repo} ya existe.")
             return f"{self.api_base.split('/api')[0]}/{self.org}/{nombre_repo}.git"
@@ -118,9 +143,56 @@ class GitLabProvider(GitProviderClient):
                 raise GitLabProvisionError(f"Error al aprovisionar {self.org}/{nombre_repo}: HTTP {res.status_code} {res.text}")
 
     async def crear_commit_archivo(self, repo_url: str, path: str, content: str, message: str) -> str:
-        raise NotImplementedError("crear_commit_archivo not implemented for GitLab yet")
+        """
+        Sube o actualiza un archivo específico dentro de un repositorio.
+        Si el archivo ya existe, añade el nuevo texto al final del archivo original.
+        """
+        repo_name = repo_url.split('/')[-1].replace('.git', '')
+        project_path = f"{self.org}/{repo_name}".replace("/", "%2F")
+        file_path = path.replace("/", "%2F")
+        
+        import base64
+        
+        async with await self._get_client() as client:
+            # 1. Obtener la rama por defecto del proyecto
+            proj_res = await client.get(f"/projects/{project_path}")
+            if proj_res.status_code != 200:
+                raise GitLabProvisionError(f"No se pudo acceder al proyecto {repo_name}")
+            branch = proj_res.json().get("default_branch", "main")
+            
+            # 2. Comprobar si el archivo existe
+            file_res = await client.get(f"/projects/{project_path}/repository/files/{file_path}?ref={branch}")
+            
+            final_content = content
+            method = client.post # POST para crear nuevo
+            
+            if file_res.status_code == 200:
+                file_data = file_res.json()
+                existing_content = base64.b64decode(file_data["content"]).decode('utf-8')
+                final_content = existing_content + content
+                method = client.put # PUT para actualizar
+                
+            # 3. Guardar el archivo
+            save_res = await method(
+                f"/projects/{project_path}/repository/files/{file_path}",
+                json={
+                    "branch": branch,
+                    "commit_message": message,
+                    "content": final_content
+                }
+            )
+            
+            if save_res.status_code in (200, 201):
+                # GitLab no devuelve el SHA del commit en esta llamada de la misma forma que GitHub,
+                # pero devuelve información del archivo. Devolvemos el path como éxito.
+                return save_res.json().get("file_path", path)
+            else:
+                raise GitLabProvisionError(f"Error guardando archivo {path} en {repo_name}: HTTP {save_res.status_code} {save_res.text}")
 
     async def añadir_colaborador(self, repo_url_or_name: str, username: str, permission: str = "maintain") -> None:
+        """
+        Invita a un usuario (alumno) a un repositorio y le da los permisos necesarios.
+        """
         repo_name = repo_url_or_name.split('/')[-1].replace('.git', '')
         project_path = f"{self.org}/{repo_name}".replace("/", "%2F")
         

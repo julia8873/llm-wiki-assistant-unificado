@@ -7,7 +7,7 @@ class GitProviderConfigError(Exception):
 
 def load_config_git():
     """!
-    @brief Carga la configuración desde config.yaml con expansión de variables de entorno.
+    @brief Carga la configuración desde config.yaml
     @return dict|None Retorna la configuración como diccionario o None si falla.
     """
     try:
@@ -17,8 +17,8 @@ def load_config_git():
 
 def get_git_provider() -> GitProviderClient:
     """!
-    @brief Factoría para obtener el cliente del proveedor Git configurado.
-    @return Instancia de GitProviderClient concreta.
+    @brief Obtener el cliente del proveedor Git configurado.
+    @return Instancia de GitProviderClient.
     """
     config = load_config_git()
     if not config or 'git' not in config:
