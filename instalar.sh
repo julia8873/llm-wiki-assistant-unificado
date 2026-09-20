@@ -190,19 +190,13 @@ cmd_install_all() {
   cmd_up "$@"
   echo ""
 
-
-  echo "--- Fase: Servidor de Documentación (Doxygen) ---"
-  check_docker
-  
   echo ""
   echo "--- Fase: Empaquetado del Bot LLM (Fase 5) ---"
   cmd_bot package
 
   echo "=== Secuencia Completada ==="
   echo "  [OK] Entorno configurado"
-  echo "  [OK] Lanzando servidor Doxygen silencioso"
   echo ""
-  cmd_docs serve
   warn_pending_config
 }
 
@@ -212,8 +206,25 @@ cmd_install_all() {
 ## @exception Aborta si el comando es inválido o falla la validación estricta (check).
 cmd_docs() {
   local submode="${1:-serve}"
-  info "TODO: documentación Doxygen."
-  return 0
+  check_docker
+  
+  if [[ ! -f "${ROOT_DIR}/Doxyfile" ]]; then
+    info "Creando Doxyfile base automático..."
+    docker run --rm -v "${ROOT_DIR}:/app" -w /app alpine sh -c "apk add --no-cache doxygen && doxygen -g && sed -i 's|^INPUT                  =.*|INPUT                  = src scripts instalar.sh|' Doxyfile && sed -i 's|^RECURSIVE              = NO|RECURSIVE              = YES|' Doxyfile && sed -i 's|^EXCLUDE_PATTERNS       =.*|EXCLUDE_PATTERNS       = */node_modules/* */venv/* */.git/* */playwright-report/* */alembic/versions/* */tests/* test_*.py *_test.py *_test.php|' Doxyfile && sed -i 's|^OUTPUT_DIRECTORY       =.*|OUTPUT_DIRECTORY       = docs|' Doxyfile && sed -i 's|^PROJECT_NAME           =.*|PROJECT_NAME           = \"LLM Wiki Assistant\"|' Doxyfile" >/dev/null
+  fi
+
+  if [[ "$submode" == "serve" ]]; then
+    info "Generando y sirviendo documentación (Puerto 8005)..."
+    docker rm -f doxygen-server >/dev/null 2>&1 || true
+    docker run -d --name doxygen-server -p 8005:8000 -v "${ROOT_DIR}:/app" -w /app alpine sh -c "apk add --no-cache doxygen graphviz python3 && doxygen Doxyfile && cd docs/html && python3 -m http.server 8000" >/dev/null
+    ok "Documentación Doxygen servida en http://localhost:8005"
+  elif [[ "$submode" == "check" ]]; then
+    info "Generando Doxygen en modo estricto..."
+    docker run --rm -v "${ROOT_DIR}:/app" -w /app alpine sh -c "apk add --no-cache doxygen graphviz && doxygen Doxyfile 2> doxygen.log && if [ -s doxygen.log ]; then cat doxygen.log; exit 1; fi"
+    ok "Documentación generada sin warnings."
+  else
+    error "Comando docs no válido: $submode"
+  fi
 }
 
 ### @fn generate_env()

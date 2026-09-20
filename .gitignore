@@ -38,3 +38,5 @@ src/matrix/synapse-data/media_store/
 src/bot/trash/
 src/bot/maubot.db*
 *.mbp
+docs/html/
+docs/latex/
