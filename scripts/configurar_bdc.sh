@@ -1,9 +1,9 @@
 #!/bin/bash
 ## @file configurar_bdc.sh
-## @brief Wrapper Bash para invocar el aprovisionamiento de repositorios en GitHub.
+## @brief Wrapper Bash para invocar el aprovisionamiento de repositorios en el proveedor configurado.
 ## @details
-## Recibe el nombre de la asignatura y una lista separada por comas de profesores.
-## Utiliza la instalación local de Python para ejecutar el script núcleo (configurar_bdc_core.py).
+## Recibe el nombre de la asignatura y una lista separada por comas de profesores. 
+## Ejecuta el script de python configurar_bdc_core.py
 ##
 ## Ejemplo de uso:
 ## ./configurar_bdc.sh "Math101" "julia8873,profe2"

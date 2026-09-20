@@ -162,7 +162,7 @@ okf:
     - ".md"
     - ".markdown"
     - ".txt"
-    
+
 # Configuración de tiempos de espera (timeouts) de red
 # Define el tiempo máximo en segundos que el sistema esperará al realizar peticiones HTTP
 # o al comunicarse con las APIs externas (GitHub, GitLab, Matrix) antes de abortar la 

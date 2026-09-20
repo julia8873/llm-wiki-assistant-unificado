@@ -1,42 +1,43 @@
 #!/bin/bash
+
+# Este script realiza un backup de la base de datos de PostgreSQL y de Redis.
+# Además, aplica una política de retención para evitar que el disco se llene.
+
+# si algún comando falla, se detiene el script
 set -e
 
 BACKUP_DIR="${BACKUP_DIR:-/backups}"
 mkdir -p "$BACKUP_DIR"
 
+# generar marca de tiempo para que los archivos no se sobreescriban
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 
 echo "[INFO] Iniciando backup: $TIMESTAMP"
 
-# 1. Backup de PostgreSQL
+# 1. Backup de mapeo_db (contiene relaciones entre alumnos, repositorios y salas de Matrix)
 PG_BACKUP_FILE="$BACKUP_DIR/mapeo_${TIMESTAMP}.dump"
 echo "[INFO] Generando backup de PostgreSQL en $PG_BACKUP_FILE..."
 PGPASSWORD="${POSTGRES_PASSWORD}" pg_dump -h postgres -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -Fc -f "$PG_BACKUP_FILE"
 
-# 2. Backup de Redis (AOF Directory)
+# 2. Backup de Redis (almacena información para trabajos pendientes para metrics_worker)
 REDIS_BACKUP_FILE="$BACKUP_DIR/redis_${TIMESTAMP}.tar.gz"
 echo "[INFO] Generando backup del AOF de Redis en $REDIS_BACKUP_FILE..."
-# Asumiendo que redis_data se monta en /redis_data en este contenedor de backup
 if [ -d "/redis_data/appendonlydir" ]; then
     tar -czf "$REDIS_BACKUP_FILE" -C /redis_data appendonlydir
 else
     echo "[WARN] Directorio appendonlydir no encontrado en /redis_data. Verifique que AOF está habilitado."
-    # Back up the whole data dir if appendonlydir is missing, just in case
     tar -czf "$REDIS_BACKUP_FILE" -C / redis_data
 fi
 
 echo "[INFO] Backups generados correctamente."
 
-# 3. Política de Retención
+# 3. Política de Retención (para no llenar el disco)
 echo "[INFO] Aplicando política de retención..."
 
-# Conservar los últimos 7 backups diarios (cualquier backup menor a 7 días se guarda)
-# Para semanas, podemos buscar backups antiguos.
-# Una manera robusta y sencilla usando `find`:
-# Borrar todos los backups que tengan más de 7 días, PERO conservar 1 backup por semana.
-# Como puede ser complejo con `find`, un enfoque sencillo para la retención:
-# 1. Borrar todos los archivos de más de 30 días.
-# 2. De los archivos entre 7 y 30 días de antigüedad, mantener solo los que caigan en un día específico de la semana (ej. Domingo).
+# Reglas automáticas para evitar que el disco se llene (Retención Semanal):
+# 1. Corto plazo (0 a 7 días): Se conservan TODAS las copias de seguridad de la última semana.
+# 2. Medio plazo (7 a 30 días): De los archivos antiguos, se borran todos excepto los que se hicieron en Domingo (1 por semana).
+# 3. Largo plazo (+30 días): Se borra cualquier copia que tenga más de un mes.
 
 # Eliminamos ficheros más antiguos de 30 días (las últimas 4 semanas de margen)
 find "$BACKUP_DIR" -type f -name "mapeo_*.dump" -mtime +30 -exec rm {} \;
@@ -49,7 +50,6 @@ for file in "$BACKUP_DIR"/mapeo_*.dump "$BACKUP_DIR"/redis_*.tar.gz; do
         # Verificar si tiene más de 7 días
         if [ $(find "$file" -mtime +7 -print) ]; then
             # Obtener el día de la semana en el que se creó/modificó el archivo (1-7, 7 es Domingo)
-            # Linux date de stat
             file_ts=$(stat -c %Y "$file")
             file_dow=$(date -d "@$file_ts" +%u)
             if [ "$file_dow" -ne 7 ]; then

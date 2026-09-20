@@ -55,3 +55,13 @@ class GitProviderClient(ABC):
         @return SHA del commit creado.
         """
         pass
+
+    @abstractmethod
+    async def añadir_colaborador(self, repo_url_or_name: str, username: str, permission: str = "maintain") -> None:
+        """!
+        @brief Añade un colaborador al repositorio con los permisos indicados.
+        @param repo_url_or_name URL o identificador del repositorio.
+        @param username Nombre de usuario a invitar/añadir.
+        @param permission Permisos a otorgar (por defecto "maintain").
+        """
+        pass

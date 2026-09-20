@@ -178,3 +178,14 @@ class GitHubProvider(GitProviderClient):
                 return put_res.json()["commit"]["sha"]
             else:
                 raise GitHubProvisionError(f"Failed to create/update file {path} in {repo_name}: HTTP {put_res.status_code} {put_res.text}")
+
+    async def añadir_colaborador(self, repo_url_or_name: str, username: str, permission: str = "maintain") -> None:
+        repo_name = repo_url_or_name.split('/')[-1].replace('.git', '')
+        async with await self._get_client() as client:
+            res = await client.put(
+                f"/repos/{self.org}/{repo_name}/collaborators/{username}",
+                json={"permission": permission}
+            )
+            if res.status_code not in (201, 204):
+                raise GitHubProvisionError(f"Error al añadir colaborador {username} en {repo_name}: HTTP {res.status_code} {res.text}")
+            logger.info(f"Colaborador {username} ({permission}) añadido a {self.org}/{repo_name}.")

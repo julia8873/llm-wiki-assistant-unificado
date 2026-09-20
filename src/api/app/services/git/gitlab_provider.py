@@ -119,3 +119,31 @@ class GitLabProvider(GitProviderClient):
 
     async def crear_commit_archivo(self, repo_url: str, path: str, content: str, message: str) -> str:
         raise NotImplementedError("crear_commit_archivo not implemented for GitLab yet")
+
+    async def añadir_colaborador(self, repo_url_or_name: str, username: str, permission: str = "maintain") -> None:
+        repo_name = repo_url_or_name.split('/')[-1].replace('.git', '')
+        project_path = f"{self.org}/{repo_name}".replace("/", "%2F")
+        
+        # En GitLab, los permisos son enteros: 40 = Maintainer, 30 = Developer
+        access_level = 40 if permission == "maintain" else 30
+        
+        async with await self._get_client() as client:
+            # Primero buscamos el ID del usuario en GitLab
+            user_res = await client.get(f"/users?username={username}")
+            if user_res.status_code != 200 or not user_res.json():
+                raise GitLabProvisionError(f"Usuario {username} no encontrado en GitLab.")
+            
+            user_id = user_res.json()[0]["id"]
+            
+            # Añadimos al usuario al proyecto
+            res = await client.post(
+                f"/projects/{project_path}/members",
+                json={
+                    "user_id": user_id,
+                    "access_level": access_level
+                }
+            )
+            # 201 = Creado, 409 = Ya existe
+            if res.status_code not in (201, 409):
+                raise GitLabProvisionError(f"Error al añadir colaborador {username} en {repo_name}: HTTP {res.status_code} {res.text}")
+            logger.info(f"Colaborador {username} ({access_level}) añadido a {self.org}/{repo_name}.")

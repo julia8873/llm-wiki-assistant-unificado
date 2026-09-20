@@ -1,4 +1,12 @@
 <?php
+/**
+ * @file create_env.php
+ * @brief Script de inicialización (seeder) para entornos de desarrollo Moodle.
+ * @details Crea automáticamente usuarios de prueba (un profesor y un alumno) 
+ * y un curso ("EDII-Oficial"), matriculándolos en sus roles respectivos. 
+ * Se utiliza para no tener que crear datos a mano cada vez que se levanta Docker.
+ */
+
 define('CLI_SCRIPT', true);
 require('/bitnami/moodle/config.php');
 require_once($CFG->dirroot.'/user/lib.php');
