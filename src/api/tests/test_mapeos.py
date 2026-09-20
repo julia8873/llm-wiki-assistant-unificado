@@ -30,7 +30,8 @@ def apply_override():
 
 @pytest.fixture(name="client")
 def client_fixture():
-    os.environ["MAPEO_API_TOKEN"] = "test_token"
+    from app.core.config import settings
+    settings.MAPEO_API_TOKEN = "test_token"
     Base.metadata.create_all(bind=engine)
     client = TestClient(app)
     yield client

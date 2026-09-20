@@ -35,7 +35,8 @@ def setup_db():
 
 def test_post_evento_idempotency():
     client = TestClient(app)
-    token = os.getenv("MAPEO_API_TOKEN", "test_token")
+    from app.core.config import settings
+    token = settings.MAPEO_API_TOKEN
     headers = {"Authorization": f"Bearer {token}"}
     
     import uuid

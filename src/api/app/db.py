@@ -9,8 +9,9 @@ from sqlalchemy import Column, Integer, String, DateTime, UniqueConstraint, crea
 from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
 import os
+from app.core.config import settings
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:////data/mapeos.db")
+DATABASE_URL = settings.DATABASE_URL
 is_sqlite = DATABASE_URL.startswith("sqlite")
 connect_args = {"check_same_thread": False} if is_sqlite else {}
 engine = create_engine(DATABASE_URL, echo=False, connect_args=connect_args)

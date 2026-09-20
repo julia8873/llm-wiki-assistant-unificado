@@ -10,8 +10,10 @@ from app.db import Base, get_session
 from sqlalchemy.orm import sessionmaker
 
 # Configuramos la BD dependiendo del entorno (para el test)
-os.environ["MAPEO_API_TOKEN"] = "valid_test_token"
-TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite:///./test_concurrencia.db")
+from app.core.config import settings
+settings.MAPEO_API_TOKEN = "valid_test_token"
+settings.DATABASE_URL = "sqlite:///./test_concurrencia.db"
+TEST_DATABASE_URL = settings.DATABASE_URL
 is_sqlite = TEST_DATABASE_URL.startswith("sqlite")
 # Forzamos un timeout muy bajo para asegurar que falle rápido bajo concurrencia simulando alta carga
 connect_args = {"check_same_thread": False, "timeout": 0.01} if is_sqlite else {}
@@ -41,7 +43,7 @@ def create_mapeo(user_id: int):
         "matrix_room_id": f"!room{user_id}:localhost"
     }
     # Obtener el token de la app real, o usar el que este configurado
-    token = os.getenv("MAPEO_API_TOKEN", "changeme")
+    token = settings.MAPEO_API_TOKEN
     headers = {"Authorization": f"Bearer {token}"}
     try:
         response = client.post("/mapeos", json=payload, headers=headers)

@@ -68,26 +68,24 @@ async def test_generar_repo_fallo_controlado(base_config):
     assert "HTTP 500" in str(exc_info.value)
 
 @pytest.mark.asyncio
-@patch('app.services.git.github_provider.os.getenv')
-async def test_lectura_del_pat(mock_getenv, base_config):
+async def test_lectura_del_pat(base_config):
     # Test reading PAT from env var
-    mock_getenv.return_value = "env-pat-456"
+    from app.core.config import settings
+    settings.GITHUB_PAT = "env-pat-456"
     del base_config['git']['github']['pat']
     
-    # Patch settings getattr as well to force fallback to getenv
-    with patch('app.services.git.github_provider.getattr', return_value=None):
-        provider = GitHubProvider(base_config)
-        assert provider.pat == "env-pat-456"
-        assert provider.headers["Authorization"] == "token env-pat-456"
+    provider = GitHubProvider(base_config)
+    assert provider.pat == "env-pat-456"
+    assert provider.headers["Authorization"] == "token env-pat-456"
 
 @pytest.mark.asyncio
 async def test_lectura_pat_falta_config(base_config):
     # Ensure it raises error if PAT is completely missing
     del base_config['git']['github']['pat']
+    from app.core.config import settings
+    settings.GITHUB_PAT = None
     
-    with patch('app.services.git.github_provider.os.getenv', return_value=None):
-        with patch('app.services.git.github_provider.getattr', return_value=None):
-            with pytest.raises(GitHubProvisionError) as exc_info:
+    with pytest.raises(GitHubProvisionError) as exc_info:
                 GitHubProvider(base_config)
             
             assert "GITHUB_PAT no está configurado" in str(exc_info.value)

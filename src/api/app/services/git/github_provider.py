@@ -18,7 +18,7 @@ class GitHubProvider(GitProviderClient):
         
         # Leemos el PAT del entorno o configuración
         env_var = config['git']['github'].get('pat_env_var', 'GITHUB_PAT')
-        self.pat = (getattr(settings, env_var, None) or os.getenv(env_var) or config['git']['github'].get('pat'))
+        self.pat = getattr(settings, env_var, None) or config['git']['github'].get('pat')
         
         if not self.pat:
             raise GitHubProvisionError(f"{env_var} no está configurado")
@@ -76,13 +76,13 @@ class GitHubProvider(GitProviderClient):
     async def registrar_webhook(self, repo_url: str) -> None:
         repo_name = repo_url.split('/')[-1].replace('.git', '')
         
-        target_url = getattr(settings, 'PUBLIC_API_URL', os.getenv('PUBLIC_API_URL'))
+        target_url = settings.PUBLIC_API_URL
         if not target_url:
             logger.warning(f"No PUBLIC_API_URL set, skipping webhook registration for {repo_name}")
             return
             
         webhook_url = f"{target_url.rstrip('/')}/sync/oficial-updated"
-        secret = getattr(settings, 'GITHUB_WEBHOOK_SECRET', os.getenv('GITHUB_WEBHOOK_SECRET'))
+        secret = settings.GITHUB_WEBHOOK_SECRET
         if not secret:
             logger.warning(f"No GITHUB_WEBHOOK_SECRET set, skipping webhook registration for {repo_name}")
             return

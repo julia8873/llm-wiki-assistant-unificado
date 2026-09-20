@@ -40,7 +40,8 @@ def test_get_git_provider_github(mock_load_config, base_config):
 @patch('app.services.git.load_config')
 def test_get_git_provider_gitlab(mock_load_config, base_config):
     base_config['git']['proveedor_activo'] = 'gitlab'
-    os.environ['GITLAB_TOKEN'] = 'test_token'
+    from app.core.config import settings
+    settings.GITLAB_TOKEN = 'test_token'
     mock_load_config.return_value = base_config
     provider = get_git_provider()
     assert isinstance(provider, GitLabProvider)

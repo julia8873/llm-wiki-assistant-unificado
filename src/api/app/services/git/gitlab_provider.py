@@ -16,8 +16,8 @@ class GitLabProvider(GitProviderClient):
         self.api_base = config['git']['gitlab']['api_base_url']
         
         env_var = config['git']['gitlab'].get('token_env_var', 'GITLAB_TOKEN')
-        # Buscamos en env_var directamente, o en settings, o si el propio env_var parece un token
-        self.token = getattr(settings, env_var, None) or os.getenv(env_var) or config['git']['gitlab'].get('pat')
+        # Buscamos en env_var directamente en settings, o si el propio env_var parece un token
+        self.token = getattr(settings, env_var, None) or config['git']['gitlab'].get('pat')
         if not self.token and env_var.startswith("glpat-"):
             self.token = env_var
         

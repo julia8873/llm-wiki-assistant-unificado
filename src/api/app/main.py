@@ -20,6 +20,7 @@ from rq import Queue, Retry
 from .models import MapeoCreate, MapeoRead, MapeoEstado, CursoCreate, EventoCreate, EventoRead
 from .db import create_db_and_tables, get_session, MapeoDB, EventosBotDB
 from .services.git import get_git_provider, GitProviderConfigError
+from .core.config import settings
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import Request
@@ -32,7 +33,7 @@ class SunsetMiddleware(BaseHTTPMiddleware):
             response.headers["Sunset"] = "Wed, 01 Jan 2027 00:00:00 GMT"
         return response
 
-app = FastAPI(title="Mapeo API", description="API centralizada para la relación Alumno-Curso-Fork-Sala", docs_url="/docs" if os.getenv("ENVIRONMENT") in ["dev", "local"] else None, redoc_url="/redoc" if os.getenv("ENVIRONMENT") in ["dev", "local"] else None, openapi_url="/openapi.json" if os.getenv("ENVIRONMENT") in ["dev", "local"] else None)
+app = FastAPI(title="Mapeo API", description="API centralizada para la relación Alumno-Curso-Fork-Sala", docs_url="/docs" if settings.ENVIRONMENT in ["dev", "local"] else None, redoc_url="/redoc" if settings.ENVIRONMENT in ["dev", "local"] else None, openapi_url="/openapi.json" if settings.ENVIRONMENT in ["dev", "local"] else None)
 app.add_middleware(SunsetMiddleware)
 
 from fastapi.responses import JSONResponse
@@ -67,7 +68,7 @@ sync_queue = Queue('sync-jobs', connection=redis_conn)
 security = HTTPBearer()
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    expected_token = os.getenv("MAPEO_API_TOKEN")
+    expected_token = settings.MAPEO_API_TOKEN
     if not expected_token:
         raise HTTPException(status_code=500, detail="Token no configurado en el servidor")
     
@@ -81,7 +82,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
 @app.on_event("startup")
 def on_startup():
-    token = os.getenv("MAPEO_API_TOKEN")
+    token = settings.MAPEO_API_TOKEN
     if not token or token in ("default_token", "changeme"):
         raise RuntimeError("FATAL: MAPEO_API_TOKEN no está configurado correctamente. Revisa tu fichero .env.")
     create_db_and_tables()
@@ -283,7 +284,7 @@ async def sync_webhook(response: Response, request: Request, session: Session = 
         response.headers["Sunset"] = "Wed, 18 Feb 2027 00:00:00 GMT"
 
     # 1. Verificar firma HMAC
-    secret = os.getenv("GITHUB_WEBHOOK_SECRET")
+    secret = settings.GITHUB_WEBHOOK_SECRET
     if not secret:
         raise HTTPException(status_code=500, detail="Webhook secret not configured")
 
