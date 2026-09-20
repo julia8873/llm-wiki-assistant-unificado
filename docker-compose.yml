@@ -68,6 +68,9 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
       - SYNAPSE_CONFIG_ENABLE_ENV=yes
+      - SYNAPSE_REGISTRATION_SECRET=${SYNAPSE_REGISTRATION_SECRET}
+      - SYNAPSE_MACAROON_SECRET=${SYNAPSE_MACAROON_SECRET}
+      - SYNAPSE_FORM_SECRET=${SYNAPSE_FORM_SECRET}
     volumes:
       - ./src/matrix/synapse-data:/data
       - ./src/matrix/synapse-custom/rest_auth_provider.py:/data/rest_auth_provider.py:ro

@@ -2,7 +2,8 @@ import logging
 import json
 import urllib.request
 import urllib.error
-import os
+import asyncio
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -10,8 +11,10 @@ class RestAuthProvider:
     def __init__(self, config, account_handler):
         self.api = account_handler
         self.endpoint = config.get("endpoint")
-        domain = os.environ.get("DOMAIN", "localhost")
-        self.host_header = config.get("host_header", f"{domain}:8000")
+        self.server_name = self.api.server_name
+        
+        default_host = urlparse(self.endpoint).netloc if self.endpoint else self.server_name
+        self.host_header = config.get("host_header", default_host)
 
     @staticmethod
     def parse_config(config):
@@ -27,8 +30,7 @@ class RestAuthProvider:
             localpart = user_id.split(":", 1)[0][1:]
         else:
             localpart = user_id
-            domain = os.environ.get("DOMAIN", "localhost")
-            user_id = f"@{localpart}:{domain}"
+            user_id = f"@{localpart}:{self.server_name}"
         
         payload = json.dumps({
             "user": {
@@ -43,24 +45,28 @@ class RestAuthProvider:
 
         req = urllib.request.Request(self.endpoint, data=payload, headers=headers)
         
-        try:
-            # Petición síncrona simple, ideal para entornos con bajo volumen de accesos
+        def _do_request():
             with urllib.request.urlopen(req, timeout=5) as response:
-                if response.status == 200:
-                    res_body = json.loads(response.read().decode('utf-8'))
-                    if res_body.get('auth') is True:
-                        logger.info("Moodle auth successful for %s", localpart)
+                return response.status, response.read()
+        
+        try:
+            # Petición HTTP delegada a un hilo para evitar bloquear el event loop de Synapse
+            status, body = await asyncio.to_thread(_do_request)
+            if status == 200:
+                res_body = json.loads(body.decode('utf-8'))
+                if res_body.get('auth') is True:
+                    logger.info("Moodle auth successful for %s", localpart)
+                    
+                    # Auto-registro en Synapse si no existe
+                    try:
+                        # Account handler legacy support check
+                        if not (await self.api.check_user_exists(user_id)):
+                            logger.info("User %s does not exist yet, auto-creating", user_id)
+                            await self.api.register_user(localpart=localpart)
+                    except Exception as reg_err:
+                        logger.error("Failed to auto-register user %s: %s", user_id, str(reg_err))
                         
-                        # Auto-registro en Synapse si no existe
-                        try:
-                            # Account handler legacy support check
-                            if not (await self.api.check_user_exists(user_id)):
-                                logger.info("User %s does not exist yet, auto-creating", user_id)
-                                await self.api.register_user(localpart=localpart)
-                        except Exception as reg_err:
-                            logger.error("Failed to auto-register user %s: %s", user_id, str(reg_err))
-                            
-                        return True
+                    return True
         except urllib.error.HTTPError as e:
             logger.info("Moodle auth failed for %s with HTTP %s", localpart, e.code)
         except Exception as e:

@@ -473,10 +473,9 @@ cmd_up() {
   local domain; domain=$(grep -m 1 '^DOMAIN=' "${ROOT_DIR}/.env" | cut -d= -f2- | tr -d '\r' || echo "localhost")
   if [[ "$domain" != "localhost" ]]; then
     info "Inyectando DOMAIN=${domain} en archivos estáticos..."
-    sed -i "s/localhost/${domain}/g" "${ROOT_DIR}/src/matrix/synapse-data/homeserver.yaml" 2>/dev/null || true
-    sed -i "s/localhost/${domain}/g" "${ROOT_DIR}/src/matrix/element/config.json" 2>/dev/null || true
-    sed -i "s/localhost/${domain}/g" "${ROOT_DIR}/src/bot/base-config.yaml" 2>/dev/null || true
-    sed -i "s/localhost/${domain}/g" "${ROOT_DIR}/src/bot/config.yaml" 2>/dev/null || true
+    sed -i 's/\${DOMAIN}/'"${domain}"'/g' "${ROOT_DIR}/src/matrix/element/config.json" 2>/dev/null || true
+    sed -i 's/\${DOMAIN}/'"${domain}"'/g' "${ROOT_DIR}/src/bot/base-config.yaml" 2>/dev/null || true
+    sed -i 's/\${DOMAIN}/'"${domain}"'/g' "${ROOT_DIR}/src/bot/config.yaml" 2>/dev/null || true
   fi
 
   cd "${ROOT_DIR}"

@@ -9,7 +9,7 @@
 # For more information on how to configure Synapse, including a complete accounting of
 # each option, go to docs/usage/configuration/config_documentation.md or
 # https://element-hq.github.io/synapse/latest/usage/configuration/config_documentation.html
-server_name: "localhost"
+server_name: "${SYNAPSE_SERVER_NAME}"
 pid_file: /data/homeserver.pid
 
 # Permitir a Element Web conectarse desde el navegador
@@ -35,13 +35,13 @@ database:
     host: postgres
     cp_min: 5
     cp_max: 10
-log_config: "/data/localhost.log.config"
+log_config: "/data/homeserver.log.config"
 media_store_path: /data/media_store
-registration_shared_secret: "@c8G+4ap+f9pkuW3lv#5WigwZ+9@qbit,cn#6y4#pN5StfIH0_"
+registration_shared_secret: "${SYNAPSE_REGISTRATION_SECRET}"
 report_stats: false
-macaroon_secret_key: "jgNKPvtf6NGB,:qF7cjm^rqBoEv~9&lh,I04@aRegiqdPc5ykh"
-form_secret: "R=0@2W@-fjnjVU8Jnp:Pd@d.^N7EPJ,3ruR*h4okB*Fy1;53+r"
-signing_key_path: "/data/localhost.signing.key"
+macaroon_secret_key: "${SYNAPSE_MACAROON_SECRET}"
+form_secret: "${SYNAPSE_FORM_SECRET}"
+signing_key_path: "/data/${SYNAPSE_SERVER_NAME}.signing.key"
 trusted_key_servers:
   - server_name: "matrix.org"
 
