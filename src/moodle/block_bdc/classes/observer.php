@@ -31,7 +31,10 @@ class observer {
         
         if ($course && !empty($course->shortname)) {
             $baseurl = getenv('MAPEO_API_URL_INTERNA') ?: 'http://mapeo-api:8000';
-            $token = getenv('MAPEO_API_TOKEN') ?: 'changeme';
+            $token = getenv('MAPEO_API_TOKEN');
+            if (empty($token) || $token === 'changeme') {
+                throw new \moodle_exception('error_missing_token', 'block_bdc', '', 'MAPEO_API_TOKEN no está configurado en el entorno.');
+            }
             
             $curl = new \curl(['ignoresecurity' => true]);
             $curl->setHeader('Authorization: Bearer ' . $token);

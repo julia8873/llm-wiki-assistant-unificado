@@ -34,7 +34,7 @@ class block_bdc_synapse_admin_client {
     public function __construct() {
         $this->baseurl = getenv('SYNAPSE_URL_INTERNA') ?: 'http://synapse:8008';
         $this->token = getenv('MATRIX_ACCESS_TOKEN');
-        if (empty($this->token)) {
+        if (empty($this->token) || $this->token === 'changeme') {
             throw new moodle_exception('error_missing_token', 'block_bdc', '', 'MATRIX_ACCESS_TOKEN no está configurado en el entorno.');
         }
     }

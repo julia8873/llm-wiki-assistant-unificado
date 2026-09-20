@@ -32,9 +32,11 @@ class block_bdc_mapeo_client {
      * Constructor del cliente.
      */
     public function __construct() {
-        // En un entorno de producción, estos valores deberían leerse de variables de entorno o config.
         $this->baseurl = getenv('MAPEO_API_URL_INTERNA') ?: 'http://mapeo-api:8000';
-        $this->token = getenv('MAPEO_API_TOKEN') ?: 'changeme';
+        $this->token = getenv('MAPEO_API_TOKEN');
+        if (empty($this->token) || $this->token === 'changeme') {
+            throw new moodle_exception('error_missing_token', 'block_bdc', '', 'MAPEO_API_TOKEN no está configurado en el entorno.');
+        }
     }
 
     /**
