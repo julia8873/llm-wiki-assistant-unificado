@@ -15,7 +15,7 @@ class MapeoEstado(str, Enum):
     """!
     @brief Estado de la provisión del mapeo de sala y repositorio.
     """
-    PENDIENTE_GITHUB = "PENDIENTE_GITHUB"
+    PENDIENTE_GIT = "PENDIENTE_GIT"
     ACTIVO = "ACTIVO"
 
 class MapeoBase(BaseModel):
@@ -28,7 +28,7 @@ class MapeoBase(BaseModel):
     official_repo_url: Optional[str] = None
     git_provider: Optional[str] = "github"
     matrix_room_id: Optional[str] = None
-    estado: MapeoEstado = MapeoEstado.PENDIENTE_GITHUB
+    estado: MapeoEstado = MapeoEstado.PENDIENTE_GIT
     is_teacher: bool = False
     moodle_username: Optional[str] = None
     moodle_course_name: Optional[str] = None

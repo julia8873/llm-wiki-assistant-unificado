@@ -112,7 +112,7 @@ async def create_mapeo(response: Response, request: Request, mapeo: MapeoCreate,
         moodle_user_id=mapeo.moodle_user_id,
         moodle_course_id=mapeo.moodle_course_id,
         matrix_room_id=mapeo.matrix_room_id,
-        estado=MapeoEstado.PENDIENTE_GITHUB,
+        estado=MapeoEstado.PENDIENTE_GIT,
         is_teacher=1 if mapeo.is_teacher else 0,
         moodle_username=mapeo.moodle_username,
         moodle_course_name=mapeo.moodle_course_shortname

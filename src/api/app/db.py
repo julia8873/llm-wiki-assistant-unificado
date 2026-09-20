@@ -35,7 +35,7 @@ class MapeoDB(Base):
     official_repo_url = Column(String, nullable=True)
     git_provider = Column(String, nullable=False, default="github")
     matrix_room_id = Column(String, nullable=True)
-    estado = Column(String, default="PENDIENTE_GITHUB")
+    estado = Column(String, default="PENDIENTE_GIT")
     is_teacher = Column(Integer, default=0)
     moodle_username = Column(String, nullable=True)
     moodle_course_name = Column(String, nullable=True)
