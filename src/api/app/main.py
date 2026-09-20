@@ -27,6 +27,7 @@ from fastapi import Request
 
 class SunsetMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        """Intercepta las peticiones para avisar si la ruta está obsoleta."""
         response = await call_next(request)
         route = request.scope.get("route")
         if route and getattr(route, "deprecated", False):
@@ -42,6 +43,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """Maneja errores HTTP devolviendo un formato estándar JSON."""
     return JSONResponse(
         status_code=exc.status_code,
         content={"type": "about:blank", "title": "HTTP Error", "status": exc.status_code, "detail": str(exc.detail), "instance": request.url.path}
@@ -49,6 +51,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Devuelve un error claro cuando faltan datos o son incorrectos en la petición."""
     return JSONResponse(
         status_code=422,
         content={"type": "about:blank", "title": "Validation Error", "status": 422, "detail": str(exc.errors()), "instance": request.url.path}
@@ -56,6 +59,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
+    """Atrapa cualquier error inesperado para que el servidor no se cuelgue."""
     return JSONResponse(
         status_code=500,
         content={"type": "about:blank", "title": "Internal Server Error", "status": 500, "detail": "Ocurrió un error inesperado", "instance": request.url.path}
@@ -68,6 +72,7 @@ sync_queue = Queue('sync-jobs', connection=redis_conn)
 security = HTTPBearer()
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Comprueba que la petición incluye el token de seguridad correcto."""
     expected_token = settings.MAPEO_API_TOKEN
     if not expected_token:
         raise HTTPException(status_code=500, detail="Token no configurado en el servidor")
@@ -82,6 +87,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
 @app.on_event("startup")
 def on_startup():
+    """Se ejecuta al encender la API para verificar que el token de seguridad está bien configurado."""
     token = settings.MAPEO_API_TOKEN
     if not token or token in ("default_token", "changeme"):
         raise RuntimeError("FATAL: MAPEO_API_TOKEN no está configurado correctamente. Revisa tu fichero .env.")
@@ -89,6 +95,7 @@ def on_startup():
 @app.get("/v1/health", status_code=200)
 @app.get("/health", status_code=200, deprecated=True)
 def health_check(response: Response, request: Request, ):
+    """Endpoint simple para comprobar que la API está encendida y funcionando."""
     if not request.url.path.startswith("/v1/"):
         response.headers["Sunset"] = "Wed, 18 Feb 2027 00:00:00 GMT"
 
@@ -100,18 +107,7 @@ async def create_mapeo(response: Response, request: Request, mapeo: MapeoCreate,
     if not request.url.path.startswith("/v1/"):
         response.headers["Sunset"] = "Wed, 18 Feb 2027 00:00:00 GMT"
 
-    """!
-    @brief Crea un nuevo mapeo y aprovisiona el repositorio en GitHub/GitLab/Gitea.
-    @details
-    Endpoint llamado por Moodle cuando un alumno accede por primera vez al bloque BdC.
-    Se asegura de que no existan mapeos duplicados para el mismo usuario y curso.
-    Invoca asíncronamente a `generar_repo_alumno` para interactuar con la API del proveedor de Git.
-    
-    @param mapeo MapeoCreate Datos enviados desde el bloque de Moodle.
-    @param session Session Sesión de la base de datos inyectada por FastAPI.
-    @param token str Token de autenticación inyectado por FastAPI.
-    @return MapeoRead Entidad creada con el ID, repositorio asignado y estado.
-    """
+    """Crea un nuevo vínculo entre un alumno, su curso y sus repositorios/salas."""
     db_mapeo = MapeoDB(
         moodle_user_id=mapeo.moodle_user_id,
         moodle_course_id=mapeo.moodle_course_id,
@@ -133,7 +129,7 @@ async def create_mapeo(response: Response, request: Request, mapeo: MapeoCreate,
             detail="Ya existe un mapeo para este usuario y curso."
         )
 
-    # Si se nos provee nombre de usuario y asignatura, aprovisionamos en el Git provider
+    # Si se nos provee nombre de usuario y asignatura
     if mapeo.moodle_username and mapeo.moodle_course_shortname:
         try:
             provider = get_git_provider()
@@ -143,9 +139,13 @@ async def create_mapeo(response: Response, request: Request, mapeo: MapeoCreate,
             from app.services.git import load_config
             from urllib.parse import urlparse
             cfg = load_config()
-            provider_name = cfg['git'].get('proveedor_activo', 'github')
-            provider_config = cfg['git'].get(provider_name, {})
-            api_base = provider_config.get('api_base_url', 'https://api.github.com')
+            if 'proveedor_activo' not in cfg['git']:
+                raise ValueError("El campo 'proveedor_activo' es obligatorio en config.yaml bajo 'git'")
+            provider_name = cfg['git']['proveedor_activo']
+            provider_config = cfg['git'][provider_name]
+            if 'api_base_url' not in provider_config:
+                raise ValueError(f"El campo 'api_base_url' es obligatorio en config.yaml para el proveedor '{provider_name}'")
+            api_base = provider_config['api_base_url']
             provider_domain = urlparse(api_base).netloc.replace('api.', '')
             if provider_name == 'gitlab':
                 org = provider_config.get('grupo_destino')
@@ -158,13 +158,12 @@ async def create_mapeo(response: Response, request: Request, mapeo: MapeoCreate,
             else:
                 repo_url = await provider.generar_repo_alumno(nombre_repo, repo_oficial_url)
             
-            # Actualizamos BD con éxito
+            # Actualizamos BD
             db_mapeo.repo_url = repo_url
             db_mapeo.official_repo_url = f"https://{provider_domain}/{org}/{repo_oficial_url}.git"
             db_mapeo.estado = MapeoEstado.ACTIVO
             db_mapeo.is_teacher = 1 if mapeo.is_teacher else 0
             
-            provider_name = cfg['git']['proveedor_activo'] if cfg and 'git' in cfg else 'github'
             db_mapeo.git_provider = provider_name
             
             session.commit()
@@ -219,6 +218,7 @@ def read_mapeos(response: Response, request: Request,
     if not request.url.path.startswith("/v1/"):
         response.headers["Sunset"] = "Wed, 18 Feb 2027 00:00:00 GMT"
 
+    """Busca y devuelve mapeos filtrando por usuario, curso o sala."""
     print(f"DEBUG: moodle_user_id={moodle_user_id}, moodle_username={moodle_username}")
     query = session.query(MapeoDB)
     if moodle_user_id is not None:
@@ -241,6 +241,7 @@ def read_mapeos(response: Response, request: Request,
 @app.get("/v1/mapeos/by-room/{matrix_room_id}", response_model=MapeoRead)
 @app.get("/mapeos/by-room/{matrix_room_id}", response_model=MapeoRead, deprecated=True)
 def get_by_room(response: Response, request: Request, matrix_room_id: str, session: Session = Depends(get_session), token: str = Depends(verify_token)):
+    """Busca el mapeo específico que corresponde a una sala de chat."""
     if not request.url.path.startswith("/v1/"):
         response.headers["Sunset"] = "Wed, 18 Feb 2027 00:00:00 GMT"
 
@@ -255,15 +256,11 @@ async def create_curso(response: Response, request: Request, curso: CursoCreate,
     if not request.url.path.startswith("/v1/"):
         response.headers["Sunset"] = "Wed, 18 Feb 2027 00:00:00 GMT"
 
-    """!
-    @brief Aprovisiona la plantilla oficial del curso en el proveedor Git.
-    @details
-    Endpoint llamado por Moodle al crear un curso nuevo.
-    """
+    """Crea la plantilla oficial del curso en el proveedor Git (GitHub/GitLab/Gitea)."""
     try:
         provider = get_git_provider()
-        # Usamos BdC-template como identificador del template oficial
-        repo_url = await provider.crear_repo_oficial(curso.moodle_course_shortname, template_id="BdC-template")
+        # Usamos el template especificado en el .env como identificador del template oficial
+        repo_url = await provider.crear_repo_oficial(curso.moodle_course_shortname, template_id=settings.TEMPLATE_ID)
         # Marcamos como template para que los alumnos lo puedan copiar limpiamente
         await provider.marcar_como_template(repo_url)
         return {"status": "ok", "repo_url": repo_url}
@@ -279,6 +276,7 @@ async def create_curso(response: Response, request: Request, curso: CursoCreate,
 @app.post("/v1/sync/oficial-updated")
 @app.post("/sync/oficial-updated", deprecated=True)
 async def sync_webhook(response: Response, request: Request, session: Session = Depends(get_session)):
+    """Recibe avisos de GitHub cuando se actualiza el código del profesor y manda a actualizar a los alumnos."""
     if not request.url.path.startswith("/v1/"):
         response.headers["Sunset"] = "Wed, 18 Feb 2027 00:00:00 GMT"
 
@@ -346,6 +344,7 @@ async def sync_webhook(response: Response, request: Request, session: Session = 
 @app.post("/v1/eventos", response_model=EventoRead, status_code=status.HTTP_201_CREATED)
 @app.post("/eventos", response_model=EventoRead, status_code=status.HTTP_201_CREATED, deprecated=True)
 async def create_evento(response: Response, request: Request, evento: EventoCreate, session: Session = Depends(get_session), token: str = Depends(verify_token)):
+    """Guarda en la base de datos un evento o acción que haya realizado el bot."""
     if not request.url.path.startswith("/v1/"):
         response.headers["Sunset"] = "Wed, 18 Feb 2027 00:00:00 GMT"
 
@@ -390,9 +389,7 @@ from datetime import datetime
 
 @app.post("/v1/audit/discrepancias", response_model=DiscrepanciaAuditResponse, status_code=status.HTTP_201_CREATED)
 async def audit_discrepancia(response: Response, request: Request, payload: DiscrepanciaAuditPayload, session: Session = Depends(get_session), token: str = Depends(verify_token)):
-    """!
-    @brief Registra la resolución de una discrepancia en el repositorio del alumno.
-    """
+    """Guarda un registro (auditoría) en el repositorio del alumno cuando resuelve una discrepancia."""
     if not payload.moodle_user_id or not payload.moodle_course_id:
         raise HTTPException(status_code=400, detail="moodle_user_id and moodle_course_id are required")
         
@@ -407,14 +404,11 @@ async def audit_discrepancia(response: Response, request: Request, payload: Disc
     try:
         provider = get_git_provider()
         
-        # Format payload as JSONL
         jsonl_line = json.dumps(payload.model_dump()) + "\n"
         
-        # Calculate file path based on current date
         current_date = datetime.utcnow().strftime("%Y-%m-%d")
         file_path = f"logs/discrepancias/{current_date}.jsonl"
         
-        # Commit directly to the repository using the provider (which must implement crear_commit_archivo)
         commit_sha = await provider.crear_commit_archivo(
             repo_url=mapeo.repo_url,
             path=file_path,
