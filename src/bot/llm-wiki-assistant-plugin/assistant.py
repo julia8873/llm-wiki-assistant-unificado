@@ -30,6 +30,10 @@ class Config(BaseProxyConfig):
 
 class LLMWikiAssistantPlugin(Plugin):
     async def start(self) -> None:
+        """!
+        @brief Inicializa el plugin de Maubot, carga la configuración y conecta a los servicios (API Mapeo, PGVector).
+        Lanza excepciones estrictas si faltan variables de entorno esenciales para evitar fallos silenciosos.
+        """
         # Cargar config.yaml centralizado
         config_path = "/config/config.yaml"
         if not os.path.exists(config_path):
@@ -50,16 +54,23 @@ class LLMWikiAssistantPlugin(Plugin):
 
         self.system_prompt = self.app_config.get("llm", {}).get("system_prompt", "Eres un asistente.")
         
-        mapeo_api_token = os.environ.get("MAPEO_API_TOKEN", "")
-        mapeo_api_url = os.environ.get("MAPEO_API_URL", "http://mapeo-api:8000")
-        
+        mapeo_api_token = os.environ.get("MAPEO_API_TOKEN")
+        mapeo_api_url = os.environ.get("MAPEO_API_URL")
+        if not mapeo_api_token:
+            raise ValueError("MAPEO_API_TOKEN no está configurado.")
+        if not mapeo_api_url:
+            raise ValueError("MAPEO_API_URL no está configurado.")
+            
         self.mapeo_client = MapeoClient(mapeo_api_url, mapeo_api_token)
         
         # Postgres DSN para pgvector
-        pg_user = os.environ.get("PGVECTOR_USER", "llm_wiki")
-        pg_pass = os.environ.get("PGVECTOR_PASSWORD", "llm_wiki_pass")
-        pg_db = os.environ.get("PGVECTOR_DB", "vector_store")
-        pg_host = os.environ.get("PGVECTOR_HOST", "pgvector")
+        pg_user = os.environ.get("PGVECTOR_USER")
+        pg_pass = os.environ.get("PGVECTOR_PASSWORD")
+        pg_db = os.environ.get("PGVECTOR_DB")
+        pg_host = os.environ.get("PGVECTOR_HOST")
+        
+        if not all([pg_user, pg_pass, pg_db, pg_host]):
+            raise ValueError("Faltan variables de entorno esenciales para configurar PGVECTOR (USER, PASSWORD, DB, HOST).")
         
         dsn = f"postgresql://{pg_user}:{pg_pass}@{pg_host}:5432/{pg_db}"
         self.vector_store = VectorStore(dsn)
@@ -81,11 +92,18 @@ class LLMWikiAssistantPlugin(Plugin):
         self.teacher_mode = {}   # {room_id: "oficial" | "carpeta"}
 
     async def stop(self) -> None:
+        """!
+        @brief Cierra conexiones limpiamente al detener el plugin (ej: base de datos vectorial).
+        """
         if hasattr(self, 'vector_store'):
             await self.vector_store.close()
 
     @event.on(EventType.ROOM_ENCRYPTED)
     async def handle_encrypted(self, evt: MessageEvent) -> None:
+        """!
+        @brief Captura eventos encriptados y genera un log de error.
+        @param evt Evento de Matrix.
+        """
         self.log.error(f"RECIBIDO EVENTO ENCRIPTADO SIN DESENCRIPTAR: sender={evt.sender}, room={evt.room_id}")
 
     @event.on(EventType.ROOM_MESSAGE)

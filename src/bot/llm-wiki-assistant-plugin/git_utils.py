@@ -39,7 +39,6 @@ async def distributed_repo_lock(destino_local: str):
             while True:
                 await asyncio.sleep(ttl / 3.0)
                 try:
-                    # redis-py lock extend is async
                     await lock.extend(ttl)
                 except Exception as e:
                     logger.warning(f"Error renovando el lock para {destino_local}: {e}")
@@ -80,16 +79,16 @@ async def run_git_command(*args, cwd=None):
     if args and args[0] == 'push':
         # --- Doble barrera de seguridad: evitar push de tokens ---
         import re
-        # List of regexes for common Git provider tokens
+        # Lista de expresiones regulares para tokens comunes de proveedores Git
         token_patterns = [
-            r"ghp_[a-zA-Z0-9]{36}", # GitHub Personal Access Token
-            r"github_pat_[a-zA-Z0-9_]{82}", # GitHub Fine-grained PAT
-            r"glpat-[a-zA-Z0-9\-]{20,}", # GitLab Personal Access Token
+            r"ghp_[a-zA-Z0-9]{36}", # Token de Acceso Personal de GitHub
+            r"github_pat_[a-zA-Z0-9_]{82}", # Token de Acceso Personal de grano fino de GitHub
+            r"glpat-[a-zA-Z0-9\-]{20,}", # Token de Acceso Personal de GitLab
         ]
         
-        # Check what is about to be pushed
-        # Typically origin/main..HEAD or origin/master..HEAD
-        # We try to get the diff. If upstream is not set, we just check HEAD.
+        # Comprobar qué se va a subir (push)
+        # Normalmente origin/main..HEAD u origin/master..HEAD
+        # Intentamos obtener las diferencias (diff). Si no hay upstream configurado, solo comprobamos HEAD.
         diff_proc = await asyncio.create_subprocess_exec(
             'git', 'log', '-p', 'origin/HEAD..HEAD',
             stdout=asyncio.subprocess.PIPE,
@@ -98,7 +97,7 @@ async def run_git_command(*args, cwd=None):
         )
         diff_out, diff_err = await diff_proc.communicate()
         
-        # Also check just the latest commit to be safe, in case origin/main tracking is weird
+        # También comprobamos el último commit por seguridad, en caso de que el rastreo de origin/main falle
         diff_proc_last = await asyncio.create_subprocess_exec(
             'git', 'show', 'HEAD',
             stdout=asyncio.subprocess.PIPE,
@@ -149,7 +148,7 @@ async def asegurar_repo_local(repo_alumno_url: str, official_repo_url: Optional[
         parent_dir = os.path.dirname(destino_local)
         os.makedirs(parent_dir, exist_ok=True)
         
-        # Git clone
+        # Clonar repositorio con git
         process = await asyncio.create_subprocess_exec(
             'git', 'clone', auth_url, os.path.basename(destino_local),
             cwd=parent_dir,
@@ -170,7 +169,7 @@ async def asegurar_repo_local(repo_alumno_url: str, official_repo_url: Optional[
         if code != 0:
             raise RuntimeError(f"Error en reset origin/HEAD: {err}")
 
-    # Set author for bot commits (alway ensure it's set)
+    # Establecer autor para los commits del bot (asegurar siempre que esté configurado)
     await run_git_command('config', 'user.name', 'LLM Wiki Assistant', cwd=destino_local)
     await run_git_command('config', 'user.email', 'bot@llm-wiki', cwd=destino_local)
 
@@ -189,12 +188,12 @@ async def asegurar_repo_local(repo_alumno_url: str, official_repo_url: Optional[
         else:
             official_auth_url = official_repo_url
 
-        # Check if upstream exists
+        # Comprobar si el upstream existe
         code, out, err = await run_git_command('remote', 'get-url', 'upstream', cwd=destino_local)
         if code == 0:
-            # Upstream exists, update URL
+            # El upstream existe, actualizar URL
             if out.strip() != official_auth_url:
                 await run_git_command('remote', 'set-url', 'upstream', official_auth_url, cwd=destino_local)
         else:
-            # Upstream doesn't exist, add it
+            # El upstream no existe, añadirlo
             await run_git_command('remote', 'add', 'upstream', official_auth_url, cwd=destino_local)
