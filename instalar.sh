@@ -191,7 +191,7 @@ cmd_install_all() {
   echo ""
 
   echo ""
-  echo "--- Fase: Empaquetado del Bot LLM (Fase 5) ---"
+  echo "--- Fase: Empaquetado del Bot LLM ---"
   cmd_bot package
 
   echo "=== Secuencia Completada ==="
@@ -502,6 +502,13 @@ cmd_up() {
     mv "src/matrix/synapse-data/homeserver.yaml.tmp" \
        "src/matrix/synapse-data/homeserver.yaml"
   ok "homeserver.yaml configurado."
+
+  info "Aplicando variables de entorno a Element config.json..."
+  envsubst < "src/matrix/element/config.json" \
+            > "src/matrix/element/config.json.tmp" && \
+    mv "src/matrix/element/config.json.tmp" \
+       "src/matrix/element/config.json"
+  ok "Element config.json configurado."
 
   local compose_args="-f docker-compose.yml"
   if [[ "$env_mode" == "dev" ]]; then
