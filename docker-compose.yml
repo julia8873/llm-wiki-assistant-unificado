@@ -147,6 +147,10 @@ services:
       - GITHUB_PAT=${GITHUB_PAT}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - PGVECTOR_USER=llm_wiki
+      - PGVECTOR_PASSWORD=llm_wiki_pass
+      - PGVECTOR_DB=vector_store
+      - PGVECTOR_HOST=pgvector
       - PYTHONPATH=/shared-pkg
     command: ["sh", "-c", "exec python -m maubot -c /data/config.yaml"]
     ports:
