@@ -73,7 +73,6 @@ services:
       - SYNAPSE_FORM_SECRET=${SYNAPSE_FORM_SECRET}
     volumes:
       - ./src/matrix/synapse-data:/data
-      - ./src/matrix/synapse-custom/rest_auth_provider.py:/data/rest_auth_provider.py:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8008/health"]
       interval: 10s

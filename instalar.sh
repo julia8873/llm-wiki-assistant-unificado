@@ -479,7 +479,15 @@ cmd_up() {
   fi
 
   cd "${ROOT_DIR}"
-  
+
+  # Copiar rest_auth_provider.py a synapse-data/ antes de arrancar Synapse.
+  # Docker Desktop (virtiofs) no soporta bind mounts de archivos individuales
+  # dentro de un directorio que ya está montado como volumen; el archivo
+  # se gestiona directamente en synapse-data/ y es accesible vía ese volumen.
+  info "Copiando rest_auth_provider.py a synapse-data/..."
+  cp -f "src/matrix/synapse-custom/rest_auth_provider.py" \
+        "src/matrix/synapse-data/rest_auth_provider.py"
+
   local compose_args="-f docker-compose.yml"
   if [[ "$env_mode" == "dev" ]]; then
     compose_args="-f docker-compose.yml -f docker-compose.dev.yml"
