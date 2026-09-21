@@ -100,6 +100,7 @@ services:
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
       - GITHUB_PAT=${GITHUB_PAT}
       - DATABASE_URL=${DATABASE_URL}
+      - TEMPLATE_ID=${TEMPLATE_ID}
       - PYTHONPATH=/shared-pkg
     volumes:
       - mapeo_api_data:/data
