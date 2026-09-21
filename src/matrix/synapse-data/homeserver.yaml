@@ -28,6 +28,7 @@ listeners:
     x_forwarded: true
 database:
   name: psycopg2
+  allow_unsafe_locale: true
   args:
     user: "${POSTGRES_USER}"
     password: "${POSTGRES_PASSWORD}"
