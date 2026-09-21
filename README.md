@@ -62,25 +62,31 @@ Contiene los distintos microservicios:
       - **Importante para GitHub:** El token de acceso personal (PAT) clásico debe tener marcado obligatoriamente el scope completo de **`repo`**. Este token se coloca en la variable `GITHUB_PAT`.
 
    - Abre `config/config.yaml` y define tu proveedor Git activo (`git.proveedor_activo`, ej. `github`) y configura sus variables.
+
+  Si estás detrás de un proxy inverso, deberás revisar que la URL base de moodle y element corresponde al host:puerto o host/path según tengas configurado tu proxy.
+
+  En Moodle se puede cambiar entrando en el contenedor y modificando la variable CFG->wwwroot dentro de /bitnami/moodel/config.php . En Element hay que cambiar el base_url dentro del archivo src/matrix/element/config.json
+
+4. Propagar los cambios de variables por los archivos de configuración usando el script instalar.sh
    
-4. **Levantar la Infraestructura:**
+5. **Levantar la Infraestructura:**
    Ejecuta Docker Compose para construir y levantar todos los microservicios:
    ```bash
    docker compose up -d --build
    ```
-5. **Configurar el Token de Matrix:** 
+6. **Configurar el Token de Matrix:** 
    - Entra en `http://localhost:8081`.
    - Inicia sesión con el usuario `admin` y la contraseña de Synapse configurada en tu `.env` (por defecto, `adminpass123_changeme`).
    - Ve a *Ajustes -> Ayuda e información -> Avanzado* y copia tu **Token de Acceso**.
    - Pégalo en tu archivo `.env` en la variable `MATRIX_ACCESS_TOKEN`.
 
-6. **Reiniciar Servicios Afectados:** 
+7. **Reiniciar Servicios Afectados:** 
    Como Moodle necesita ese token para su configuración, aplica los cambios reiniciando su contenedor:
    ```bash
    docker compose restart moodle
    ```
 
-7. **Configurar el Bot (Maubot):**
+8. **Configurar el Bot (Maubot):**
    - Accede a la interfaz de administración de Maubot en `http://localhost:29317/_matrix/maubot/` (usuario `admin`, y la contraseña de Maubot configurada en tu `.env`, por defecto `maubotpass_changeme`).
    - Sube el plugin del bot (empaquetado como `.mbp`) en la pestaña **Plugins**. El plugin compilado debería encontrarse en `src/bot/llm-wiki-assitant-plugin/plugin.mbp`.
    - Añade el cliente conectándolo a `http://synapse:8008` (usando el usuario `@llm_wiki_bot:localhost`). El **access bot token** se puede obtener al final del `.env` (generado tras ejecutar `./instalar.sh`).
