@@ -488,6 +488,21 @@ cmd_up() {
   cp -f "src/matrix/synapse-custom/rest_auth_provider.py" \
         "src/matrix/synapse-data/rest_auth_provider.py"
 
+  # Sustituir variables de entorno en homeserver.yaml (plantilla con ${VAR}).
+  # Las versiones recientes de Synapse requieren homeserver.yaml con valores literales.
+  info "Aplicando variables de entorno a homeserver.yaml..."
+  set -a
+  # shellcheck disable=SC1091
+  source "${ROOT_DIR}/.env"
+  # La plantilla usa ${SYNAPSE_SERVER_NAME}; el .env lo expone como DOMAIN
+  SYNAPSE_SERVER_NAME="${DOMAIN}"
+  set +a
+  envsubst < "src/matrix/synapse-data/homeserver.yaml" \
+            > "src/matrix/synapse-data/homeserver.yaml.tmp" && \
+    mv "src/matrix/synapse-data/homeserver.yaml.tmp" \
+       "src/matrix/synapse-data/homeserver.yaml"
+  ok "homeserver.yaml configurado."
+
   local compose_args="-f docker-compose.yml"
   if [[ "$env_mode" == "dev" ]]; then
     compose_args="-f docker-compose.yml -f docker-compose.dev.yml"
