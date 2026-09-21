@@ -143,6 +143,7 @@ services:
     container_name: ${MAUBOT_NOMBRE_CONTENEDOR}
     environment:
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
+      - MAPEO_API_URL=http://mapeo-api:8000
       - GITHUB_PAT=${GITHUB_PAT}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
