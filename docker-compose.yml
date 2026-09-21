@@ -147,8 +147,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - PYTHONPATH=/shared-pkg
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-    command: ["sh", "-c", "python -c \"import os, yaml; c=yaml.safe_load(open('/data/config.yaml')); c['database']=os.environ['DATABASE_URL']; c['crypto_database']=os.environ['DATABASE_URL']; yaml.dump(c, open('/tmp/config.yaml','w'))\" && exec python -m maubot -c /tmp/config.yaml"]
+    command: ["sh", "-c", "exec python -m maubot -c /data/config.yaml"]
     ports:
       - "${MAUBOT_PUERTO_HOST}:${MAUBOT_PUERTO_CONTENEDOR}"
     volumes:
