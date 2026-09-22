@@ -61,7 +61,7 @@ git:
     # Nombre de tu usuario u organización en GitHub
     organizacion: "julia8873"
     # Nombre del repositorio plantilla desde el que se generarán los repos de alumnos
-    repo_plantilla: "BdC-template"
+    repo_plantilla: "${TEMPLATE_ID}"
     rama_defecto: "main"
     # Para configurar el token de github, actualiza la variable GITHUB_PAT en el archivo .env
     api_base_url: "https://api.github.com"
@@ -71,7 +71,7 @@ git:
     # Nombre del grupo de GitLab donde se crearán los repos
     grupo_destino: "changeme"
     # Nombre del repositorio plantilla desde el que se generarán los repos de alumnos
-    repo_plantilla: "BdC-template"
+    repo_plantilla: "${TEMPLATE_ID}"
     rama_defecto: "main"
     # Para configurar el token de gitlab, actualiza la variable GITLAB_TOKEN en el archivo .env
     api_base_url: "https://gitlab.com/api/v4"

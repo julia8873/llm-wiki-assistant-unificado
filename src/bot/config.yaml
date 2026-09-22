@@ -3,7 +3,7 @@
 #   SQLite:   sqlite:filename.db
 #   Postgres: postgresql://username:password@hostname/dbname
 database: sqlite:/data/maubot.db
-crypto_db_pickle_key: aba9479cb392adab59f4ba1eb61fda039ca2439cd57471b78a7a728c2318c5e7
+crypto_db_pickle_key: f49b949c256497e0247c7fddaeb5596aea772b3ca525a379b950a65539fa9b5f
 
 # Separate database URL for the crypto database. "default" means use the same database as above.
 crypto_database: default
@@ -79,7 +79,7 @@ homeservers:
     # When this is empty, `mbc auth --register` won't work, but `mbc auth` (login) will.
         secret:
 admins:
-    admin: $2b$12$eKZi0O1KAEak2wR4apzbo.IM5pi9bhnkYUrAN/eAsQam.NAby..I6
+    admin: $2b$12$OvJBsVrFO1h/rZvA2WhfXusY4rRqvu3l1YGqk4XlcASQ9Qyn3OhUG
 api_features:
     login: true
     plugin: true
