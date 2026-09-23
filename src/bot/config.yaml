@@ -79,7 +79,7 @@ homeservers:
     # When this is empty, `mbc auth --register` won't work, but `mbc auth` (login) will.
         secret:
 admins:
-    admin: $2b$12$OvJBsVrFO1h/rZvA2WhfXusY4rRqvu3l1YGqk4XlcASQ9Qyn3OhUG
+    admin: $2b$12$f3FP9.1LYPuylaRwnBkNyuVMBzPO0dq2okba00ETETq0XCgx04h6C
 api_features:
     login: true
     plugin: true

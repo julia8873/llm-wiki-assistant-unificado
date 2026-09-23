@@ -102,6 +102,8 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - TEMPLATE_ID=${TEMPLATE_ID}
       - PYTHONPATH=/shared-pkg
+      - PORT_MAPEO_API=${MAPEO_API_PUERTO_CONTENEDOR}
+      - MAPEO_API_ROOT_PATH=${MAPEO_API_ROOT_PATH:-}
     volumes:
       - mapeo_api_data:/data
       - ./config:/config:ro
@@ -112,6 +114,8 @@ services:
     networks:
       - default
       - bdc-net
+    ports:
+      - "${MAPEO_API_PUERTO_HOST}:${MAPEO_API_PUERTO_CONTENEDOR}"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${MAPEO_API_PUERTO_CONTENEDOR}/health"]
       interval: 10s
@@ -296,7 +300,7 @@ services:
       mapeo-api:
         condition: service_healthy
     container_name: metrics-api
-    command: ["sh", "-c", "pip install -e . && alembic upgrade head && uvicorn metrics_api.main:app --host 0.0.0.0 --port 8000"]
+    command: ["sh", "-c", "pip install -e . && alembic upgrade head && uvicorn metrics_api.main:app --host 0.0.0.0 --port ${PORT_METRICS_API:-8000} --proxy-headers --root-path \"${METRICS_API_ROOT_PATH:-}\""]
     volumes:
       - ./src/metrics-api:/app
       - ./config:/config
