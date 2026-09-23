@@ -36,9 +36,9 @@ services:
       - MOODLE_SITE_NAME=LLM Wiki Assistant Moodle
       - MOODLE_HOST=${MOODLE_EXTERNAL_URL}
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
-      - MAPEO_API_URL=http://mapeo-api:${MAPEO_API_PUERTO_CONTENEDOR}
+      - MAPEO_API_URL=${MAPEO_API_URL}
       - MATRIX_ACCESS_TOKEN=${MATRIX_ACCESS_TOKEN}
-      - SYNAPSE_URL=http://synapse:${SYNAPSE_PUERTO_CONTENEDOR}
+      - SYNAPSE_URL=${SYNAPSE_URL}
     depends_on:
       mariadb:
         condition: service_healthy
@@ -149,7 +149,7 @@ services:
     container_name: ${MAUBOT_NOMBRE_CONTENEDOR}
     environment:
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
-      - MAPEO_API_URL=http://mapeo-api:${MAPEO_API_PUERTO_CONTENEDOR}
+      - MAPEO_API_URL=${MAPEO_API_URL}
       - GITHUB_PAT=${GITHUB_PAT}
       - GITHUB_ORG=${GITHUB_ORG}
       - TEMPLATE_ID=${TEMPLATE_ID}
@@ -235,7 +235,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
-      - MAPEO_API_URL=http://mapeo-api:${MAPEO_API_PUERTO_CONTENEDOR}
+      - MAPEO_API_URL=${MAPEO_API_URL}
       - METRICS_API_URL=http://metrics-api:${PORT_METRICS_API}
       - PYTHONPATH=/data/llm-wiki-assistant-plugin:/shared-pkg
     volumes:
@@ -264,7 +264,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
-      - MAPEO_API_URL=http://mapeo-api:${MAPEO_API_PUERTO_CONTENEDOR}
+      - MAPEO_API_URL=${MAPEO_API_URL}
       - METRICS_API_URL=http://metrics-api:${PORT_METRICS_API}
       - PYTHONPATH=/data/llm-wiki-assistant-plugin:/shared-pkg
     volumes:
@@ -319,9 +319,9 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
-      - MOODLE_AUTH_URL=http://moodle:${MOODLE_PUERTO_CONTENEDOR}/login/token.php
+      - MOODLE_AUTH_URL=${MOODLE_AUTH_URL}
       - MOODLE_HOST_HEADER=${DOMAIN}:${MOODLE_PUERTO_HOST}
-      - MAPEO_API_URL=http://mapeo-api:${MAPEO_API_PUERTO_CONTENEDOR}
+      - MAPEO_API_URL=${MAPEO_API_URL}
       - ENABLE_DEMO_AUTH=true
       - ENVIRONMENT=dev
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
@@ -348,7 +348,7 @@ services:
       - MOCK_SERVICES=false
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - GITHUB_TOKEN=${GITHUB_PAT}
-      - MAPEO_API_URL=http://mapeo-api:${MAPEO_API_PUERTO_CONTENEDOR}
+      - MAPEO_API_URL=${MAPEO_API_URL}
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
 
   frontend:
