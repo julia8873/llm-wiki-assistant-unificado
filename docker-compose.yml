@@ -316,14 +316,14 @@ services:
     working_dir: /app
     environment:
       - PYTHONPATH=/shared-pkg
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - DATABASE_URL=${DATABASE_URL}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
       - MOODLE_AUTH_URL=${MOODLE_AUTH_URL}
       - MOODLE_HOST_HEADER=${DOMAIN}:${MOODLE_PUERTO_HOST}
       - MAPEO_API_URL=${MAPEO_API_URL}
-      - ENABLE_DEMO_AUTH=true
-      - ENVIRONMENT=dev
+      - ENABLE_DEMO_AUTH=${ENABLE_DEMO_AUTH}
+      - ENVIRONMENT=${ENVIRONMENT}
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
       - PII_SECRET_KEY=${PII_SECRET_KEY}
       - GITHUB_TOKEN=${GITHUB_PAT}
@@ -345,8 +345,8 @@ services:
       - ./src/shared:/shared-pkg
     working_dir: /app
     environment:
-      - MOCK_SERVICES=false
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - MOCK_SERVICES=${MOCK_SERVICES}
+      - DATABASE_URL=${DATABASE_URL}
       - GITHUB_TOKEN=${GITHUB_PAT}
       - MAPEO_API_URL=${MAPEO_API_URL}
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
