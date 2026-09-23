@@ -223,7 +223,7 @@ print_summary() {
   
   cd "${ROOT_DIR}" || true
   if docker compose ps --services --filter "status=running" 2>/dev/null | grep -q "ollama"; then
-    echo "Ollama      http://${OLLAMA_BASE_URL:-localhost}:${OLLAMA_PORT:-11434}          (Perfil Activo)"
+    echo "Ollama      http://${OLLAMA_BASE_URL:-localhost}:${OLLAMA_PORT}          (Perfil Activo)"
   else
     echo "Ollama      -                                (Inactivo. Usa --ollama para levantar)"
   fi
