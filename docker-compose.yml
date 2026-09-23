@@ -236,7 +236,7 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
       - MAPEO_API_URL=${MAPEO_API_URL}
-      - METRICS_API_URL=http://metrics-api:${PORT_METRICS_API}
+      - METRICS_API_URL=${METRICS_API_URL}
       - PYTHONPATH=/data/llm-wiki-assistant-plugin:/shared-pkg
     volumes:
       - ./src/bot:/data
@@ -265,7 +265,7 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
       - MAPEO_API_URL=${MAPEO_API_URL}
-      - METRICS_API_URL=http://metrics-api:${PORT_METRICS_API}
+      - METRICS_API_URL=${METRICS_API_URL}
       - PYTHONPATH=/data/llm-wiki-assistant-plugin:/shared-pkg
     volumes:
       - ./src/bot:/data
