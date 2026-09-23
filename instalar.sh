@@ -113,7 +113,7 @@ cmd_docs() {
     info "Generando y sirviendo documentación (Puerto ${doxygen_port})..."
     docker rm -f "$doxygen_name" >/dev/null 2>&1 || true
     docker run -d --name "$doxygen_name" -p "${doxygen_port}:8000" -v "${ROOT_DIR}:/app" -w /app alpine sh -c "apk add --no-cache doxygen graphviz python3 && doxygen Doxyfile && cd docs/html && python3 -m http.server 8000" >/dev/null
-    ok "Documentación Doxygen servida en http://localhost:${doxygen_port}"
+    ok "Documentación Doxygen servida en http://127.0.0.1:${doxygen_port}"
   elif [[ "$submode" == "check" ]]; then
     info "Generando Doxygen en modo estricto..."
     docker run --rm -v "${ROOT_DIR}:/app" -w /app alpine sh -c "apk add --no-cache doxygen graphviz && doxygen Doxyfile 2> doxygen.log && if [ -s doxygen.log ]; then cat doxygen.log; exit 1; fi"
@@ -248,7 +248,7 @@ setup_synapse_admin() {
   [[ -z "$admin_pass" ]] && error "SYNAPSE_ADMIN_PASSWORD no está definido en .env"
   [[ -z "$domain" ]] && error "DOMAIN no está definido en .env"
 
-  local synapse_url="http://localhost:${synapse_port}"
+  local synapse_url="http://127.0.0.1:${synapse_port}"
   local token_in_env; token_in_env=$(grep -m 1 '^MATRIX_ACCESS_TOKEN=' "$env_file" | cut -d= -f2- | tr -d '\r')
 
   info "Verificando que @${admin_user}:${domain} sea admin de Synapse..."
@@ -334,7 +334,7 @@ setup_bot_token() {
   [[ -z "$synapse_container" ]] && error "SYNAPSE_NOMBRE_CONTENEDOR no está definido en .env"
   [[ -z "$bot_username" ]] && error "MATRIX_BOT_USER no está definido en .env"
 
-  local synapse_url="http://localhost:${synapse_port}"
+  local synapse_url="http://127.0.0.1:${synapse_port}"
   local bot_token; bot_token=$(grep -E "^BOT_ACCESS_TOKEN=" "$root_env" | cut -d= -f2- || true)
   
   if [[ -z "$bot_token" ]]; then
