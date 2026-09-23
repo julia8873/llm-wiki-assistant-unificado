@@ -33,7 +33,7 @@ services:
       - MOODLE_USERNAME=${MOODLE_USERNAME}
       - MOODLE_PASSWORD=${MOODLE_PASSWORD}
       - MOODLE_EMAIL=${MOODLE_EMAIL}
-      - MOODLE_SITE_NAME=LLM Wiki Assistant Moodle
+      - MOODLE_SITE_NAME=${MOODLE_SITE_NAME}
       - MOODLE_HOST=${MOODLE_EXTERNAL_URL}
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
       - MAPEO_API_URL=${MAPEO_API_URL}
@@ -47,7 +47,7 @@ services:
       - moodledata_data:/bitnami/moodledata
       - ./src/moodle/block_bdc:/moodle-custom-plugin
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/8080'"]
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/${MOODLE_PUERTO_CONTENEDOR}'"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -75,7 +75,7 @@ services:
     volumes:
       - ./src/matrix/synapse-data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8008/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:${SYNAPSE_PUERTO_CONTENEDOR}/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -208,7 +208,7 @@ services:
     container_name: ${REDIS_NOMBRE_CONTENEDOR}
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      - "${REDIS_PUERTO_HOST}:${REDIS_PUERTO_CONTENEDOR}"
     networks:
       - default
       - bdc-net
