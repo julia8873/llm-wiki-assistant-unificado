@@ -238,7 +238,6 @@ generate_env() {
 
   # Configurar plantillas base
   copy_if_missing "${ROOT_DIR}/config/config.yaml.example"                        "${ROOT_DIR}/config/config.yaml"
-  copy_if_missing "${ROOT_DIR}/src/bot/base-config.yaml.example" "${ROOT_DIR}/src/bot/base-config.yaml"
   copy_if_missing "${ROOT_DIR}/src/bot/config.yaml.example"      "${ROOT_DIR}/src/bot/config.yaml"
 
   # Generar MAPEO_API_TOKEN si está en modo default
@@ -476,7 +475,6 @@ cmd_up() {
   if [[ "$domain" != "localhost" ]]; then
     info "Inyectando DOMAIN=${domain} en archivos estáticos..."
     sed -i 's/\${DOMAIN}/'"${domain}"'/g' "${ROOT_DIR}/src/matrix/element/config.json" 2>/dev/null || true
-    sed -i 's/\${DOMAIN}/'"${domain}"'/g' "${ROOT_DIR}/src/bot/base-config.yaml" 2>/dev/null || true
     sed -i 's/\${DOMAIN}/'"${domain}"'/g' "${ROOT_DIR}/src/bot/config.yaml" 2>/dev/null || true
   fi
 

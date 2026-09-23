@@ -1,0 +1,5 @@
+database: sqlite:/data/maubot.db
+crypto_db_pickle_key: my_key_value
+
+admins:
+    admin: my_hash_value
