@@ -38,7 +38,7 @@ services:
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
       - MAPEO_API_URL_INTERNA=http://mapeo-api:${MAPEO_API_PUERTO_CONTENEDOR}
       - MATRIX_ACCESS_TOKEN=${MATRIX_ACCESS_TOKEN}
-      - SYNAPSE_URL_INTERNA=http://synapse:8008
+      - SYNAPSE_URL_INTERNA=http://synapse:${SYNAPSE_PUERTO_CONTENEDOR}
     depends_on:
       mariadb:
         condition: service_healthy
@@ -126,7 +126,7 @@ services:
 
   postgres:
     image: postgres:16-alpine
-    container_name: moodle-matrix-dev-postgres-1
+    container_name: ${POSTGRES_NOMBRE_CONTENEDOR}
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -178,13 +178,13 @@ services:
 
   pgvector:
     image: pgvector/pgvector:pg16
-    container_name: moodle-matrix-dev-pgvector-1
+    container_name: ${PGVECTOR_NOMBRE_CONTENEDOR}
     environment:
       POSTGRES_USER: ${PGVECTOR_USER}
       POSTGRES_PASSWORD: ${PGVECTOR_PASSWORD}
       POSTGRES_DB: ${PGVECTOR_DB}
     ports:
-      - "5432:5432"
+      - "${PGVECTOR_PUERTO_HOST}:${PGVECTOR_PUERTO_CONTENEDOR}"
     volumes:
       - pgvector_data:/var/lib/postgresql/data
     healthcheck:
@@ -205,7 +205,7 @@ services:
 
   redis:
     image: redis:7
-    container_name: moodle-matrix-dev-redis-1
+    container_name: ${REDIS_NOMBRE_CONTENEDOR}
     command: ["redis-server", "--appendonly", "yes"]
     ports:
       - "6379:6379"
@@ -224,9 +224,9 @@ services:
     build:
       context: ./src/bot
       dockerfile: Dockerfile
-    container_name: moodle-matrix-dev-sync-worker-1
+    container_name: ${SYNC_WORKER_1_NOMBRE_CONTENEDOR}
     working_dir: /data/llm-wiki-assistant-plugin
-    command: ["rq", "worker", "sync-jobs", "log-jobs", "--url", "redis://redis:6379"]
+    command: ["rq", "worker", "sync-jobs", "log-jobs", "--url", "redis://redis:${REDIS_PUERTO_CONTENEDOR}"]
     environment:
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
       - GITHUB_PAT=${GITHUB_PAT}
@@ -236,7 +236,7 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
       - MAPEO_API_URL=http://mapeo-api:${MAPEO_API_PUERTO_CONTENEDOR}
-      - METRICS_API_URL=http://metrics-api:8000
+      - METRICS_API_URL=http://metrics-api:${PORT_METRICS_API}
       - PYTHONPATH=/data/llm-wiki-assistant-plugin:/shared-pkg
     volumes:
       - ./src/bot:/data
@@ -253,9 +253,9 @@ services:
     build:
       context: ./src/bot
       dockerfile: Dockerfile
-    container_name: moodle-matrix-dev-sync-worker-2
+    container_name: ${SYNC_WORKER_2_NOMBRE_CONTENEDOR}
     working_dir: /data/llm-wiki-assistant-plugin
-    command: ["rq", "worker", "sync-jobs", "log-jobs", "--url", "redis://redis:6379"]
+    command: ["rq", "worker", "sync-jobs", "log-jobs", "--url", "redis://redis:${REDIS_PUERTO_CONTENEDOR}"]
     environment:
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
       - GITHUB_PAT=${GITHUB_PAT}
@@ -265,7 +265,7 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
       - MAPEO_API_URL=http://mapeo-api:${MAPEO_API_PUERTO_CONTENEDOR}
-      - METRICS_API_URL=http://metrics-api:8000
+      - METRICS_API_URL=http://metrics-api:${PORT_METRICS_API}
       - PYTHONPATH=/data/llm-wiki-assistant-plugin:/shared-pkg
     volumes:
       - ./src/bot:/data
@@ -281,7 +281,7 @@ services:
   backup:
     build:
       context: ./src/backup
-    container_name: moodle-matrix-dev-backup-1
+    container_name: ${BACKUP_NOMBRE_CONTENEDOR}
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -307,8 +307,8 @@ services:
     depends_on:
       mapeo-api:
         condition: service_healthy
-    container_name: metrics-api
-    command: ["sh", "-c", "pip install -e . && alembic upgrade head && uvicorn metrics_api.main:app --host 0.0.0.0 --port ${PORT_METRICS_API:-8000} --proxy-headers --root-path \"${METRICS_API_ROOT_PATH:-}\""]
+    container_name: ${METRICS_API_NOMBRE_CONTENEDOR}
+    command: ["sh", "-c", "pip install -e . && alembic upgrade head && uvicorn metrics_api.main:app --host 0.0.0.0 --port ${PORT_METRICS_API} --proxy-headers --root-path \"${METRICS_API_ROOT_PATH:-}\""]
     volumes:
       - ./src/metrics-api:/app
       - ./config:/config
@@ -319,7 +319,7 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - JWT_SECRET_KEY=dev_secret_key_for_local_testing_only
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
-      - MOODLE_AUTH_URL=http://moodle:8080/login/token.php
+      - MOODLE_AUTH_URL=http://moodle:${MOODLE_PUERTO_CONTENEDOR}/login/token.php
       - MAPEO_API_URL=http://mapeo-api:${MAPEO_API_PUERTO_CONTENEDOR}
       - ENABLE_DEMO_AUTH=true
       - ENVIRONMENT=dev
@@ -336,7 +336,7 @@ services:
     depends_on:
       mapeo-api:
         condition: service_healthy
-    container_name: metrics-worker
+    container_name: ${METRICS_WORKER_NOMBRE_CONTENEDOR}
     command: ["sh", "-c", "export PYTHONPATH=/shared-pkg && pip install -e /metrics-api && pip install -e . && python -m metrics_worker.worker"]
     volumes:
       - ./src/metrics-worker:/app
@@ -352,13 +352,13 @@ services:
 
   frontend:
     image: node:20-alpine
-    container_name: metrics-frontend
+    container_name: ${FRONTEND_NOMBRE_CONTENEDOR}
     command: ["sh", "-c", "npm install && npm run dev"]
     volumes:
       - ./src/frontend:/app
     working_dir: /app
     ports:
-      - "3001:3000"
+      - "${FRONTEND_PUERTO_HOST}:${FRONTEND_PUERTO_CONTENEDOR}"
 
 volumes:
   mariadb_data:
