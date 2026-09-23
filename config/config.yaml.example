@@ -59,7 +59,7 @@ git:
 
   github:
     # Nombre de tu usuario u organización en GitHub
-    organizacion: "julia8873"
+    organizacion: "${GITHUB_ORG}"
     # Nombre del repositorio plantilla desde el que se generarán los repos de alumnos
     repo_plantilla: "${TEMPLATE_ID}"
     rama_defecto: "main"
@@ -69,7 +69,7 @@ git:
 
   gitlab:
     # Nombre del grupo de GitLab donde se crearán los repos
-    grupo_destino: "changeme"
+    grupo_destino: "${GITLAB_GROUP}"
     # Nombre del repositorio plantilla desde el que se generarán los repos de alumnos
     repo_plantilla: "${TEMPLATE_ID}"
     rama_defecto: "main"
@@ -79,11 +79,11 @@ git:
 
   # URL base de tu instancia autoalojada (ej. Gitea, Forgejo, GitLab CE)
   self_hosted:
-    organizacion: "changeme"
-    repo_plantilla: "BdC-template"
+    organizacion: "${SELF_HOSTED_ORG}"
+    repo_plantilla: "${TEMPLATE_ID}"
     rama_defecto: "main"
     # Para configurar el token, actualiza la variable GIT_SELF_HOSTED_TOKEN en el archivo .env
-    api_base_url: "changeme"
+    api_base_url: "${SELF_HOSTED_API_URL}"
     token_env_var: "GIT_SELF_HOSTED_TOKEN"
 
 llm:
@@ -114,7 +114,7 @@ llm:
     # Para configurar el token de ollama, actualiza la variable OLLAMA_API_KEY_DUMMY en el archivo .env
     modelo_defecto: "qwen3.6:35b-a3b"
     modelo_embedding: "nomic-embed-text"
-    api_base_url: "http://host.docker.internal:11434/v1"
+    api_base_url: "${OLLAMA_BASE_URL}/v1"
     api_key_env_var: "OLLAMA_API_KEY_DUMMY"
     temperatura: 0.2
     max_tokens: 4096
