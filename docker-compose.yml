@@ -25,8 +25,8 @@ services:
     environment:
       - BITNAMI_DEBUG=true
       - MOODLE_REVERSEPROXY=${MOODLE_REVERSEPROXY_ENABLED}
-      - MOODLE_DATABASE_HOST=mariadb
-      - MOODLE_DATABASE_PORT_NUMBER=3306
+      - MOODLE_DATABASE_HOST=${MARIADB_NOMBRE_CONTENEDOR}
+      - MOODLE_DATABASE_PORT_NUMBER=${MARIADB_PUERTO_CONTENEDOR}
       - MOODLE_DATABASE_USER=${MARIADB_USER}
       - MOODLE_DATABASE_PASSWORD=${MARIADB_PASSWORD}
       - MOODLE_DATABASE_NAME=${MARIADB_DATABASE}
@@ -160,7 +160,7 @@ services:
       - PGVECTOR_USER=${PGVECTOR_USER}
       - PGVECTOR_PASSWORD=${PGVECTOR_PASSWORD}
       - PGVECTOR_DB=${PGVECTOR_DB}
-      - PGVECTOR_HOST=pgvector
+      - PGVECTOR_HOST=${PGVECTOR_NOMBRE_CONTENEDOR}
       - PYTHONPATH=/shared-pkg
     command: ["sh", "-c", "exec python -m maubot -c /data/config.yaml"]
     ports:
@@ -228,7 +228,7 @@ services:
       dockerfile: Dockerfile
     container_name: ${SYNC_WORKER_1_NOMBRE_CONTENEDOR}
     working_dir: /data/llm-wiki-assistant-plugin
-    command: ["rq", "worker", "sync-jobs", "log-jobs", "--url", "redis://redis:${REDIS_PUERTO_CONTENEDOR}"]
+    command: ["rq", "worker", "sync-jobs", "log-jobs", "--url", "redis://${REDIS_NOMBRE_CONTENEDOR}:${REDIS_PUERTO_CONTENEDOR}"]
     environment:
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
       - GITHUB_PAT=${GITHUB_PAT}
@@ -257,7 +257,7 @@ services:
       dockerfile: Dockerfile
     container_name: ${SYNC_WORKER_2_NOMBRE_CONTENEDOR}
     working_dir: /data/llm-wiki-assistant-plugin
-    command: ["rq", "worker", "sync-jobs", "log-jobs", "--url", "redis://redis:${REDIS_PUERTO_CONTENEDOR}"]
+    command: ["rq", "worker", "sync-jobs", "log-jobs", "--url", "redis://${REDIS_NOMBRE_CONTENEDOR}:${REDIS_PUERTO_CONTENEDOR}"]
     environment:
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
       - GITHUB_PAT=${GITHUB_PAT}
