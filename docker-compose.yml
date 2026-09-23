@@ -36,6 +36,7 @@ services:
       - MOODLE_SITE_NAME=LLM Wiki Assistant Moodle
       - MOODLE_HOST=${MOODLE_EXTERNAL_URL}
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
+      - MAPEO_API_URL_INTERNA=http://mapeo-api:${MAPEO_API_PUERTO_CONTENEDOR}
       - MATRIX_ACCESS_TOKEN=${MATRIX_ACCESS_TOKEN}
       - SYNAPSE_URL_INTERNA=http://synapse:8008
     depends_on:
@@ -99,6 +100,7 @@ services:
     environment:
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
       - GITHUB_PAT=${GITHUB_PAT}
+      - GITHUB_ORG=${GITHUB_ORG}
       - DATABASE_URL=${DATABASE_URL}
       - TEMPLATE_ID=${TEMPLATE_ID}
       - PYTHONPATH=/shared-pkg
@@ -149,6 +151,8 @@ services:
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
       - MAPEO_API_URL=http://mapeo-api:${MAPEO_API_PUERTO_CONTENEDOR}
       - GITHUB_PAT=${GITHUB_PAT}
+      - GITHUB_ORG=${GITHUB_ORG}
+      - TEMPLATE_ID=${TEMPLATE_ID}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - PGVECTOR_USER=${PGVECTOR_USER}
@@ -226,10 +230,12 @@ services:
     environment:
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
       - GITHUB_PAT=${GITHUB_PAT}
+      - GITHUB_ORG=${GITHUB_ORG}
+      - TEMPLATE_ID=${TEMPLATE_ID}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
-      - MAPEO_API_URL=http://moodle-matrix-dev-mapeo-api-1:8000
+      - MAPEO_API_URL=http://mapeo-api:${MAPEO_API_PUERTO_CONTENEDOR}
       - METRICS_API_URL=http://metrics-api:8000
       - PYTHONPATH=/data/llm-wiki-assistant-plugin:/shared-pkg
     volumes:
@@ -253,10 +259,12 @@ services:
     environment:
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
       - GITHUB_PAT=${GITHUB_PAT}
+      - GITHUB_ORG=${GITHUB_ORG}
+      - TEMPLATE_ID=${TEMPLATE_ID}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
-      - MAPEO_API_URL=http://moodle-matrix-dev-mapeo-api-1:8000
+      - MAPEO_API_URL=http://mapeo-api:${MAPEO_API_PUERTO_CONTENEDOR}
       - METRICS_API_URL=http://metrics-api:8000
       - PYTHONPATH=/data/llm-wiki-assistant-plugin:/shared-pkg
     volumes:
