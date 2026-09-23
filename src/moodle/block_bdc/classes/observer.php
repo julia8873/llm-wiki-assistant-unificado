@@ -30,7 +30,10 @@ class observer {
         }
         
         if ($course && !empty($course->shortname)) {
-            $baseurl = getenv('MAPEO_API_URL_INTERNA') ?: 'http://mapeo-api:8000';
+            $baseurl = getenv('MAPEO_API_URL_INTERNA');
+            if (empty($baseurl)) {
+                throw new \moodle_exception('error_missing_config', 'block_bdc', '', 'MAPEO_API_URL_INTERNA no está configurado en el entorno.');
+            }
             $token = getenv('MAPEO_API_TOKEN');
             if (empty($token) || $token === 'changeme') {
                 throw new \moodle_exception('error_missing_token', 'block_bdc', '', 'MAPEO_API_TOKEN no está configurado en el entorno.');

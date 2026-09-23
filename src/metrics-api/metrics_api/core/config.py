@@ -3,15 +3,23 @@ from typing import Optional
 
 class Settings(BaseSettings):
     environment: str = "dev"
-    frontend_url: str = "http://localhost:3000"
-    moodle_auth_url: str = "http://localhost:8000/login/token.php"
-    moodle_host_header: str = "localhost:8000"
-    mapeo_api_url: str = "http://localhost:8001"
-    mapeo_api_token: str = "default_token"
-    jwt_secret_key: str = "default_token"
+
+    # URLs de servicios internos Docker
+    frontend_url: str
+    moodle_auth_url: str
+    moodle_host_header: str
+    mapeo_api_url: str
+
+    # Autenticación
+    mapeo_api_token: str
+    jwt_secret_key: str
     jwt_algorithm: str = "HS256"
+
+    # GitHub tokens
     github_token_agent: str = ""
     github_token: str = ""
+
+    # Feature flags
     enable_evaluation_agent: bool = False
 
     model_config = SettingsConfigDict(
@@ -21,4 +29,3 @@ class Settings(BaseSettings):
     )
 
 settings = Settings()
-

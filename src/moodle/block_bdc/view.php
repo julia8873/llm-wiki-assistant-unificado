@@ -39,11 +39,17 @@ if ($mapeo && !empty($mapeo['matrix_room_id'])) {
     // Ya existe la sala, redirigir a Element
     // Aseguramos que el usuario está dentro de la sala forzando el join
     $synapse_client = new block_bdc_synapse_admin_client();
-    $domain = getenv('DOMAIN') ?: 'localhost';
+    $domain = getenv('DOMAIN');
+    if (empty($domain)) {
+        throw new \moodle_exception('error_missing_config', 'block_bdc', '', 'DOMAIN no está configurado en el entorno.');
+    }
     $matrix_user_id = '@' . $USER->username . ':' . $domain;
     $synapse_client->join_user_to_room($mapeo['matrix_room_id'], $matrix_user_id);
-    
-    $element_url = getenv('ELEMENT_URL_BASE') ?: 'http://' . $domain . ':8081';
+
+    $element_url = getenv('ELEMENT_URL_BASE');
+    if (empty($element_url)) {
+        throw new \moodle_exception('error_missing_config', 'block_bdc', '', 'ELEMENT_URL_BASE no está configurado en el entorno.');
+    }
     $redirect_url = $element_url . '/#/room/' . urlencode($mapeo['matrix_room_id']);
     redirect($redirect_url);
 }
@@ -59,24 +65,31 @@ if ($lock) {
         $mapeo = $mapeo_client->get_mapeo($userid, $courseid);
         if ($mapeo && !empty($mapeo['matrix_room_id'])) {
             $lock->release();
-            
+
             // Forzamos el join
             $synapse_client = new block_bdc_synapse_admin_client();
-            $domain = getenv('DOMAIN') ?: 'localhost';
-    $matrix_user_id = '@' . $USER->username . ':' . $domain;
+            $domain = getenv('DOMAIN');
+            if (empty($domain)) {
+                throw new \moodle_exception('error_missing_config', 'block_bdc', '', 'DOMAIN no está configurado en el entorno.');
+            }
+            $matrix_user_id = '@' . $USER->username . ':' . $domain;
             $synapse_client->join_user_to_room($mapeo['matrix_room_id'], $matrix_user_id);
-            
-            $element_url = getenv('ELEMENT_URL_BASE') ?: 'http://' . $domain . ':8081';
+
+            $element_url = getenv('ELEMENT_URL_BASE');
+            if (empty($element_url)) {
+                throw new \moodle_exception('error_missing_config', 'block_bdc', '', 'ELEMENT_URL_BASE no está configurado en el entorno.');
+            }
             redirect($element_url . '/#/room/' . urlencode($mapeo['matrix_room_id']));
         }
         
         // No existe. Crear la sala en Matrix.
         $synapse_client = new block_bdc_synapse_admin_client();
         
-        // Determinamos el ID de matrix del alumno. 
-        // Asumimos un mapeo simple: @user_{id}:localhost
-        // Usamos el username de Moodle como ID en Matrix para asegurar la identidad.
-        $domain = getenv('DOMAIN') ?: 'localhost';
+        // Determinamos el ID de matrix del alumno.
+        $domain = getenv('DOMAIN');
+        if (empty($domain)) {
+            throw new \moodle_exception('error_missing_config', 'block_bdc', '', 'DOMAIN no está configurado en el entorno.');
+        }
         $matrix_user_id = '@' . $USER->username . ':' . $domain;
         $alias = 'bdc_u' . $userid . '_c' . $courseid . '_t' . time();
         
