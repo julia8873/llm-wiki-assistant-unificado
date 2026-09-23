@@ -147,7 +147,7 @@ generate_env() {
   fi
 
   # Generar secretos de seguridad automáticamente
-  local secrets=("AGENT_HMAC_SECRET" "INTERNAL_SERVICE_TOKEN" "PII_SECRET_KEY" "MAUBOT_CRYPTO_PICKLE_KEY")
+  local secrets=("AGENT_HMAC_SECRET" "INTERNAL_SERVICE_TOKEN" "PII_SECRET_KEY" "MAUBOT_CRYPTO_PICKLE_KEY" "JWT_SECRET_KEY")
   for secret in "${secrets[@]}"; do
     if grep -q "${secret}=.*GENERATE_RANDOM" "$env_file"; then
       local new_secret

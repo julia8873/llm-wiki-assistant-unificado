@@ -30,9 +30,9 @@ class observer {
         }
         
         if ($course && !empty($course->shortname)) {
-            $baseurl = getenv('MAPEO_API_URL_INTERNA');
+            $baseurl = getenv('MAPEO_API_URL');
             if (empty($baseurl)) {
-                throw new \moodle_exception('error_missing_config', 'block_bdc', '', 'MAPEO_API_URL_INTERNA no está configurado en el entorno.');
+                throw new \moodle_exception('error_missing_config', 'block_bdc', '', 'MAPEO_API_URL no está configurado en el entorno.');
             }
             $token = getenv('MAPEO_API_TOKEN');
             if (empty($token) || $token === 'changeme') {

@@ -32,9 +32,9 @@ class block_bdc_synapse_admin_client {
      * Constructor del cliente.
      */
     public function __construct() {
-        $this->baseurl = getenv('SYNAPSE_URL_INTERNA');
+        $this->baseurl = getenv('SYNAPSE_URL');
         if (empty($this->baseurl)) {
-            throw new moodle_exception('error_missing_config', 'block_bdc', '', 'SYNAPSE_URL_INTERNA no está configurado en el entorno.');
+            throw new moodle_exception('error_missing_config', 'block_bdc', '', 'SYNAPSE_URL no está configurado en el entorno.');
         }
         $this->token = getenv('MATRIX_ACCESS_TOKEN');
         if (empty($this->token) || $this->token === 'changeme') {

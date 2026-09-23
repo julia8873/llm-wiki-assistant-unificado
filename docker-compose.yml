@@ -36,9 +36,9 @@ services:
       - MOODLE_SITE_NAME=LLM Wiki Assistant Moodle
       - MOODLE_HOST=${MOODLE_EXTERNAL_URL}
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
-      - MAPEO_API_URL_INTERNA=http://mapeo-api:${MAPEO_API_PUERTO_CONTENEDOR}
+      - MAPEO_API_URL=http://mapeo-api:${MAPEO_API_PUERTO_CONTENEDOR}
       - MATRIX_ACCESS_TOKEN=${MATRIX_ACCESS_TOKEN}
-      - SYNAPSE_URL_INTERNA=http://synapse:${SYNAPSE_PUERTO_CONTENEDOR}
+      - SYNAPSE_URL=http://synapse:${SYNAPSE_PUERTO_CONTENEDOR}
     depends_on:
       mariadb:
         condition: service_healthy
@@ -317,9 +317,10 @@ services:
     environment:
       - PYTHONPATH=/shared-pkg
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - JWT_SECRET_KEY=dev_secret_key_for_local_testing_only
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
       - MOODLE_AUTH_URL=http://moodle:${MOODLE_PUERTO_CONTENEDOR}/login/token.php
+      - MOODLE_HOST_HEADER=${DOMAIN}:${MOODLE_PUERTO_HOST}
       - MAPEO_API_URL=http://mapeo-api:${MAPEO_API_PUERTO_CONTENEDOR}
       - ENABLE_DEMO_AUTH=true
       - ENVIRONMENT=dev
