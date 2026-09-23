@@ -179,10 +179,7 @@ cmd_install_all() {
   echo ""
 
   echo "--- Fase: Configuración Base y Secretos ---"
-  copy_if_missing "${ROOT_DIR}/.env.example"                                      "${ROOT_DIR}/.env"
-  copy_if_missing "${ROOT_DIR}/config/config.yaml.example"                        "${ROOT_DIR}/config/config.yaml"
-  copy_if_missing "${ROOT_DIR}/src/bot/base-config.yaml.example" "${ROOT_DIR}/src/bot/base-config.yaml"
-  copy_if_missing "${ROOT_DIR}/src/bot/config.yaml.example"      "${ROOT_DIR}/src/bot/config.yaml"
+  generate_env
   echo ""
 
   echo "--- Fase: Stack Docker ---"
@@ -238,6 +235,11 @@ generate_env() {
   if [[ ! -f "$env_file" ]]; then
     copy_if_missing "${ROOT_DIR}/.env.example" "$env_file"
   fi
+
+  # Configurar plantillas base
+  copy_if_missing "${ROOT_DIR}/config/config.yaml.example"                        "${ROOT_DIR}/config/config.yaml"
+  copy_if_missing "${ROOT_DIR}/src/bot/base-config.yaml.example" "${ROOT_DIR}/src/bot/base-config.yaml"
+  copy_if_missing "${ROOT_DIR}/src/bot/config.yaml.example"      "${ROOT_DIR}/src/bot/config.yaml"
 
   # Generar MAPEO_API_TOKEN si está en modo default
   if grep -q "MAPEO_API_TOKEN=changeme" "$env_file"; then
