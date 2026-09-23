@@ -194,9 +194,6 @@ generate_env() {
 ## @fn print_summary()
 ## @brief Imprime la tabla resumen de credenciales y URLs
 print_summary() {
-  set +u # Permitir variables no definidas temporalmente
-  source "${ROOT_DIR}/.env"
-  set -u
   local env_file="${ROOT_DIR}/.env"
   local moodle_port;   moodle_port=$(grep -m 1 '^MOODLE_PUERTO_HOST='   "$env_file" | cut -d= -f2- | tr -d '\r')
   local synapse_port;  synapse_port=$(grep -m 1 '^SYNAPSE_PUERTO_HOST='  "$env_file" | cut -d= -f2- | tr -d '\r')
@@ -205,32 +202,27 @@ print_summary() {
   local doxygen_port;  doxygen_port=$(grep -m 1 '^DOXYGEN_PUERTO_HOST='  "$env_file" | cut -d= -f2- | tr -d '\r')
   local mapeo_port;    mapeo_port=$(grep -m 1 '^MAPEO_API_PUERTO_HOST=' "$env_file" | cut -d= -f2- | tr -d '\r')
   local mapeo_name;    mapeo_name=$(grep -m 1 '^MAPEO_API_NOMBRE_CONTENEDOR=' "$env_file" | cut -d= -f2- | tr -d '\r')
-  local mapeo_token;   mapeo_token=$(grep -m 1 '^MAPEO_API_TOKEN='       "$env_file" | cut -d= -f2- | tr -d '\r')
-  local moodle_user;   moodle_user=$(grep -m 1 '^MOODLE_USERNAME='       "$env_file" | cut -d= -f2- | tr -d '\r')
-  local moodle_pass;   moodle_pass=$(grep -m 1 '^MOODLE_PASSWORD='       "$env_file" | cut -d= -f2- | tr -d '\r')
+  local ollama_port;   ollama_port=$(grep -m 1 '^LLM_SERVER_OPCIONAL_PUERTO_HOST=' "$env_file" | cut -d= -f2- | tr -d '\r' || echo "11434")
   local domain;        domain=$(grep -m 1 '^DOMAIN='               "$env_file" | cut -d= -f2- | tr -d '\r')
 
   echo ""
-  echo "=== RESUMEN DE SERVICIOS (Fase 1) ==="
-  echo "Servicio    URL                              Credenciales"
+  echo "=== RESUMEN DE SERVICIOS ==="
+  echo "Servicio    URL"
   echo "----------------------------------------------------------------"
-  echo "Moodle      http://${domain}:${moodle_port}                        ${moodle_user} / ${moodle_pass}"
-  echo "Matrix      http://${domain}:${synapse_port}                        -"
-  echo "Element     http://${domain}:${element_port}                        -"
-  echo "Maubot      http://${domain}:${maubot_port}/_matrix/maubot       -"
-  echo "Doxygen     http://${domain}:${doxygen_port}                                               -"
-  echo "Mapeo API   http://${mapeo_name%%:*}:${mapeo_port}                                               (Solo red interna Docker. Token: ${mapeo_token})"
+  echo "Moodle      http://${domain}:${moodle_port}"
+  echo "Matrix      http://${domain}:${synapse_port}"
+  echo "Element     http://${domain}:${element_port}"
+  echo "Maubot      http://${domain}:${maubot_port}/_matrix/maubot"
+  echo "Doxygen     http://${domain}:${doxygen_port}"
+  echo "Mapeo API   http://${mapeo_name%%:*}:${mapeo_port}"
   
   cd "${ROOT_DIR}" || true
   if docker compose ps --services --filter "status=running" 2>/dev/null | grep -q "ollama"; then
-    echo "Ollama      http://${OLLAMA_BASE_URL:-localhost}:${OLLAMA_PORT}          (Perfil Activo)"
-  else
-    echo "Ollama      -                                (Inactivo. Usa --ollama para levantar)"
+    echo "Ollama      http://${domain}:${ollama_port}"
   fi
   cd "${ROOT_DIR}"
   
   echo "----------------------------------------------------------------"
-  echo "Proveedores LLM configurados en config/config.yaml."
   echo ""
 }
 
