@@ -39,6 +39,8 @@ services:
       - MAPEO_API_URL=${MAPEO_API_URL}
       - MATRIX_ACCESS_TOKEN=${MATRIX_ACCESS_TOKEN}
       - SYNAPSE_URL=${SYNAPSE_URL}
+      - DOMAIN=${DOMAIN}
+      - ELEMENT_URL_BASE=${ELEMENT_URL_BASE}
     depends_on:
       mariadb:
         condition: service_healthy
