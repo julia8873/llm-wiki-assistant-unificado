@@ -208,16 +208,17 @@ print_summary() {
   local mapeo_token;   mapeo_token=$(grep -m 1 '^MAPEO_API_TOKEN='       "$env_file" | cut -d= -f2- | tr -d '\r')
   local moodle_user;   moodle_user=$(grep -m 1 '^MOODLE_USERNAME='       "$env_file" | cut -d= -f2- | tr -d '\r')
   local moodle_pass;   moodle_pass=$(grep -m 1 '^MOODLE_PASSWORD='       "$env_file" | cut -d= -f2- | tr -d '\r')
+  local domain;        domain=$(grep -m 1 '^DOMAIN='               "$env_file" | cut -d= -f2- | tr -d '\r')
 
   echo ""
   echo "=== RESUMEN DE SERVICIOS (Fase 1) ==="
   echo "Servicio    URL                              Credenciales"
   echo "----------------------------------------------------------------"
-  echo "Moodle      http://localhost:${moodle_port}                        ${moodle_user} / ${moodle_pass}"
-  echo "Matrix      http://localhost:${synapse_port}                        -"
-  echo "Element     http://localhost:${element_port}                        -"
-  echo "Maubot      http://localhost:${maubot_port}/_matrix/maubot       -"
-  echo "Doxygen     http://localhost:${doxygen_port}                                               -"
+  echo "Moodle      http://${domain}:${moodle_port}                        ${moodle_user} / ${moodle_pass}"
+  echo "Matrix      http://${domain}:${synapse_port}                        -"
+  echo "Element     http://${domain}:${element_port}                        -"
+  echo "Maubot      http://${domain}:${maubot_port}/_matrix/maubot       -"
+  echo "Doxygen     http://${domain}:${doxygen_port}                                               -"
   echo "Mapeo API   http://${mapeo_name%%:*}:${mapeo_port}                                               (Solo red interna Docker. Token: ${mapeo_token})"
   
   cd "${ROOT_DIR}" || true
