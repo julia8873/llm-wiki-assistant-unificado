@@ -46,18 +46,7 @@ check_docker() {
   command -v docker &>/dev/null || error "Docker no está instalado. Requerido para continuar."
 }
 
-## @fn yaml_get()
-## @brief Extrae el valor de una clave hoja desde config.yaml usando grep y awk.
-## @param $1 Clave a buscar (e.g., puerto_host).
-## @param $2 Valor por defecto a retornar si no se encuentra la clave.
-## @return String con el valor encontrado o el por defecto.
-yaml_get() {
-  local key="$1" default="${2:-}"
-  local value
-  value=$(grep -m1 "${key}:" "${CONFIG_FILE}" 2>/dev/null \
-    | awk -F': ' '{gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); gsub(/"/, "", $2); print $2}' || true)
-  echo "${value:-$default}"
-}
+
 
 ## @fn copy_if_missing()
 ## @brief Copia un archivo plantilla (ej. .example) a su destino real si no existe.
@@ -74,98 +63,9 @@ copy_if_missing() {
   fi
 }
 
-## @fn usage()
-## @brief Muestra la ayuda y el listado de subcomandos soportados.
-## @return Finaliza la ejecución limpiamente (exit 0).
-usage() {
-  cat <<EOF
-LLM Wiki Assistant — instalar.sh
 
-Comandos base:
-  (sin argumentos)         Instalación/arranque automático completo.
-  help                     Muestra esta ayuda.
 
-Fase 0.1 (Documentación):
-  docs serve               Genera y levanta Doxygen HTTP en el puerto configurado.
-  docs check               Genera Doxygen en modo estricto (falla ante warnings).
 
-Fase 1 (Entorno Docker):
-  up                       Levanta el stack Docker Compose.
-  down [--volumes]         Detiene el stack.
-  logs [servicio]          Muestra logs.
-  status                   Estado de contenedores.
-  git setup                Configura repositorios base.
-
-Fase 3 (Sincronización):
-  bot sync                 Fuerza actualización Moodle -> Matrix.
-
-Fase 5 (Bot LLM):
-  bot package              Empaqueta el plugin de Maubot (.mbp).
-
-Fase 7 (Tests Consolidados):
-  --test [--full]          Ejecuta toda la batería de pruebas (Fases 0-6).
-                           Con --full se reinicia la infraestructura desde cero.
-EOF
-  exit 0
-}
-
-## @fn warn_pending_config()
-## @brief Informa al usuario de que debe rellenar las variables de entorno pendientes.
-## @details Se llama al final de la instalación, después de que los contenedores estén operativos.
-## El MATRIX_ACCESS_TOKEN sólo puede obtenerse tras levantar Element/Synapse (Fase 1).
-warn_pending_config() {
-  local env_file="${ROOT_DIR}/.env"
-  local cfg_file="${ROOT_DIR}/config/config.yaml"
-  local has_pending=false
-
-  if grep -q "CHANGE_ME" "$env_file" 2>/dev/null; then has_pending=true; fi
-  if grep -q "CHANGE_ME" "$cfg_file" 2>/dev/null; then has_pending=true; fi
-
-  if [[ "$has_pending" == true ]]; then
-    echo ""
-    echo "⚠️  ACCIÓN REQUERIDA: INTRODUCE TUS CREDENCIALES"
-    echo "--------------------------------------------------------------------"
-    echo "  Los contenedores están operativos."
-    echo "  Los siguientes campos aún tienen el valor CHANGE_ME y deben ser"
-    echo "  configurados antes de que el sistema funcione correctamente:"
-    echo ""
-
-    if grep -q "CHANGE_ME" "$env_file" 2>/dev/null; then
-      echo "  📄 .env"
-      grep "CHANGE_ME" "$env_file" | sed 's/=.*//' | while read -r var; do
-        echo "      → $var"
-      done
-      echo ""
-    fi
-
-    if grep -q "CHANGE_ME" "$cfg_file" 2>/dev/null; then
-      echo "  📄 config/config.yaml"
-      grep "CHANGE_ME" "$cfg_file" | grep -v "^[[:space:]]*#" | sed 's/:.*$//' | sed 's/^[[:space:]]*//' | while read -r key; do
-        echo "      → $key"
-      done
-      echo ""
-    fi
-
-    echo "  MATRIX_ACCESS_TOKEN — cómo obtenerlo (requiere Element operativo):"
-    echo "      1. Abre http://localhost:8081 (Element)"
-    echo "      2. Inicia sesión como administrador"
-    echo "      3. Ajustes → Ayuda e información → Avanzado → Token de acceso"
-    echo "      4. Pégalo en .env como:  MATRIX_ACCESS_TOKEN=syt_..."
-    echo ""
-    
-    local bot_token=$(grep -E "^BOT_ACCESS_TOKEN=" "${ROOT_DIR}/.env" | cut -d= -f2- || true)
-    if [[ -n "$bot_token" ]]; then
-      echo "  TOKEN DEL BOT (llm_wiki_bot) PARA MAUBOT:"
-      echo "      $bot_token"
-      echo ""
-    fi
-
-    echo "  Cuando hayas rellenado los archivos, ejecuta de nuevo:"
-    echo "      ./instalar.sh up"
-    echo "--------------------------------------------------------------------"
-    echo ""
-  fi
-}
 
 ## @fn cmd_install_all()
 ## @brief Flujo principal de instalación que se ejecuta por defecto sin argumentos.
@@ -194,7 +94,6 @@ cmd_install_all() {
   echo "=== Secuencia Completada ==="
   echo "  [OK] Entorno configurado"
   echo ""
-  warn_pending_config
 }
 
 ## @fn cmd_docs()
@@ -607,10 +506,8 @@ EOF
   
   cd "${ROOT_DIR}"
   print_summary
-}
-cmd_down()   { error "Comando 'down' pendiente (Fase 1)."; }
-cmd_logs()   { error "Comando 'logs' pendiente (Fase 1)."; }
-cmd_status() { error "Comando 'status' pendiente (Fase 1)."; }
+
+
 ## @fn cmd_git()
 ## @brief Configura el repositorio oficial en GitHub usando un contenedor Python efímero.
 cmd_git() {
@@ -792,12 +689,9 @@ main() {
   case "$cmd" in
     docs)           cmd_docs   "${@:-serve}" ;;
     up)             cmd_up "$@" ;;
-    down)           cmd_down "$@" ;;
-    logs)           cmd_logs "$@" ;;
-    status)         cmd_status "$@" ;;
+
     git)            cmd_git "$@" ;;
     bot)            cmd_bot "$@" ;;
-    help|-h|--help) usage ;;
     *) error "Comando desconocido: '${cmd}'. Utiliza 'help' para listado completo." ;;
   esac
 }
