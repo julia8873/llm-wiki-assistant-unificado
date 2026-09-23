@@ -47,7 +47,6 @@ check_docker() {
 }
 
 
-
 ## @fn copy_if_missing()
 ## @brief Copia un archivo plantilla (ej. .example) a su destino real si no existe.
 ## @param $1 Ruta absoluta del fichero origen.
@@ -62,9 +61,6 @@ copy_if_missing() {
     warn "  Edita ${dst} e inyecta los secretos reales."
   fi
 }
-
-
-
 
 
 ## @fn cmd_install_all()
@@ -110,10 +106,14 @@ cmd_docs() {
   fi
 
   if [[ "$submode" == "serve" ]]; then
-    info "Generando y sirviendo documentación (Puerto 8005)..."
-    docker rm -f doxygen-server >/dev/null 2>&1 || true
-    docker run -d --name doxygen-server -p 8005:8000 -v "${ROOT_DIR}:/app" -w /app alpine sh -c "apk add --no-cache doxygen graphviz python3 && doxygen Doxyfile && cd docs/html && python3 -m http.server 8000" >/dev/null
-    ok "Documentación Doxygen servida en http://localhost:8005"
+    local doxygen_port; doxygen_port=$(grep -m 1 '^DOXYGEN_PUERTO_HOST=' "${ROOT_DIR}/.env" | cut -d= -f2- | tr -d '\r')
+    local doxygen_name; doxygen_name=$(grep -m 1 '^DOXYGEN_NOMBRE_CONTENEDOR=' "${ROOT_DIR}/.env" | cut -d= -f2- | tr -d '\r')
+    [[ -z "$doxygen_port" ]] && error "DOXYGEN_PUERTO_HOST no está definido en .env"
+    [[ -z "$doxygen_name" ]] && error "DOXYGEN_NOMBRE_CONTENEDOR no está definido en .env"
+    info "Generando y sirviendo documentación (Puerto ${doxygen_port})..."
+    docker rm -f "$doxygen_name" >/dev/null 2>&1 || true
+    docker run -d --name "$doxygen_name" -p "${doxygen_port}:8000" -v "${ROOT_DIR}:/app" -w /app alpine sh -c "apk add --no-cache doxygen graphviz python3 && doxygen Doxyfile && cd docs/html && python3 -m http.server 8000" >/dev/null
+    ok "Documentación Doxygen servida en http://localhost:${doxygen_port}"
   elif [[ "$submode" == "check" ]]; then
     info "Generando Doxygen en modo estricto..."
     docker run --rm -v "${ROOT_DIR}:/app" -w /app alpine sh -c "apk add --no-cache doxygen graphviz && doxygen Doxyfile 2> doxygen.log && if [ -s doxygen.log ]; then cat doxygen.log; exit 1; fi"
@@ -197,17 +197,28 @@ print_summary() {
   set +u # Permitir variables no definidas temporalmente
   source "${ROOT_DIR}/.env"
   set -u
-  
+  local env_file="${ROOT_DIR}/.env"
+  local moodle_port;   moodle_port=$(grep -m 1 '^MOODLE_PUERTO_HOST='   "$env_file" | cut -d= -f2- | tr -d '\r')
+  local synapse_port;  synapse_port=$(grep -m 1 '^SYNAPSE_PUERTO_HOST='  "$env_file" | cut -d= -f2- | tr -d '\r')
+  local element_port;  element_port=$(grep -m 1 '^ELEMENT_PUERTO_HOST='  "$env_file" | cut -d= -f2- | tr -d '\r')
+  local maubot_port;   maubot_port=$(grep -m 1 '^MAUBOT_PUERTO_HOST='   "$env_file" | cut -d= -f2- | tr -d '\r')
+  local doxygen_port;  doxygen_port=$(grep -m 1 '^DOXYGEN_PUERTO_HOST='  "$env_file" | cut -d= -f2- | tr -d '\r')
+  local mapeo_port;    mapeo_port=$(grep -m 1 '^MAPEO_API_PUERTO_HOST=' "$env_file" | cut -d= -f2- | tr -d '\r')
+  local mapeo_name;    mapeo_name=$(grep -m 1 '^MAPEO_API_NOMBRE_CONTENEDOR=' "$env_file" | cut -d= -f2- | tr -d '\r')
+  local mapeo_token;   mapeo_token=$(grep -m 1 '^MAPEO_API_TOKEN='       "$env_file" | cut -d= -f2- | tr -d '\r')
+  local moodle_user;   moodle_user=$(grep -m 1 '^MOODLE_USERNAME='       "$env_file" | cut -d= -f2- | tr -d '\r')
+  local moodle_pass;   moodle_pass=$(grep -m 1 '^MOODLE_PASSWORD='       "$env_file" | cut -d= -f2- | tr -d '\r')
+
   echo ""
   echo "=== RESUMEN DE SERVICIOS (Fase 1) ==="
   echo "Servicio    URL                              Credenciales"
   echo "----------------------------------------------------------------"
-  echo "Moodle      http://localhost:${MOODLE_PUERTO_HOST:-8000}                        ${MOODLE_USERNAME:-admin} / ${MOODLE_PASSWORD:-adminpass123}"
-  echo "Matrix      http://localhost:${SYNAPSE_PUERTO_HOST:-8008}                        -"
-  echo "Element     http://localhost:${ELEMENT_PUERTO_HOST:-8081}                        -"
-  echo "Maubot      http://localhost:${MAUBOT_PUERTO_HOST:-29317}/_matrix/maubot       -"
-  echo "Doxygen     http://localhost:8005                                               -"
-  echo "Mapeo API   http://mapeo-api:8000                                               (Solo red interna Docker. Token: ${MAPEO_API_TOKEN})"
+  echo "Moodle      http://localhost:${moodle_port}                        ${moodle_user} / ${moodle_pass}"
+  echo "Matrix      http://localhost:${synapse_port}                        -"
+  echo "Element     http://localhost:${element_port}                        -"
+  echo "Maubot      http://localhost:${maubot_port}/_matrix/maubot       -"
+  echo "Doxygen     http://localhost:${doxygen_port}                                               -"
+  echo "Mapeo API   http://${mapeo_name%%:*}:${mapeo_port}                                               (Solo red interna Docker. Token: ${mapeo_token})"
   
   cd "${ROOT_DIR}" || true
   if docker compose ps --services --filter "status=running" 2>/dev/null | grep -q "ollama"; then
@@ -231,15 +242,23 @@ print_summary() {
 ## @details Se ejecuta tras el primer arranque de los contenedores para garantizar que el
 ## MATRIX_ACCESS_TOKEN sea de un admin de Synapse y pueda crear usuarios/salas vía la Admin API.
 setup_synapse_admin() {
-  local synapse_url="http://localhost:8008"
-  local admin_user; admin_user=$(grep -m 1 '^SYNAPSE_ADMIN_USER=' "${ROOT_DIR}/.env" | cut -d= -f2- | tr -d '\r')
-  local admin_pass; admin_pass=$(grep -m 1 '^SYNAPSE_ADMIN_PASSWORD=' "${ROOT_DIR}/.env" | cut -d= -f2- | tr -d '\r' | sed 's/_CHANGE_ME.*//')
-  local token_in_env; token_in_env=$(grep -m 1 '^MATRIX_ACCESS_TOKEN=' "${ROOT_DIR}/.env" | cut -d= -f2- | tr -d '\r')
+  local env_file="${ROOT_DIR}/.env"
+  local synapse_port; synapse_port=$(grep -m 1 '^SYNAPSE_PUERTO_HOST=' "$env_file" | cut -d= -f2- | tr -d '\r')
+  local synapse_container; synapse_container=$(grep -m 1 '^SYNAPSE_NOMBRE_CONTENEDOR=' "$env_file" | cut -d= -f2- | tr -d '\r')
+  local admin_user; admin_user=$(grep -m 1 '^SYNAPSE_ADMIN_USER=' "$env_file" | cut -d= -f2- | tr -d '\r')
+  local admin_pass; admin_pass=$(grep -m 1 '^SYNAPSE_ADMIN_PASSWORD=' "$env_file" | cut -d= -f2- | tr -d '\r' | sed 's/_CHANGE_ME.*//')
+  local domain; domain=$(grep -m 1 '^DOMAIN=' "$env_file" | cut -d= -f2- | tr -d '\r')
 
-  admin_user=${admin_user:-admin}
-  admin_pass=${admin_pass:-adminpass123}
+  [[ -z "$synapse_port" ]] && error "SYNAPSE_PUERTO_HOST no está definido en .env"
+  [[ -z "$synapse_container" ]] && error "SYNAPSE_NOMBRE_CONTENEDOR no está definido en .env"
+  [[ -z "$admin_user" ]] && error "SYNAPSE_ADMIN_USER no está definido en .env"
+  [[ -z "$admin_pass" ]] && error "SYNAPSE_ADMIN_PASSWORD no está definido en .env"
+  [[ -z "$domain" ]] && error "DOMAIN no está definido en .env"
 
-  info "Verificando que @${admin_user}:localhost sea admin de Synapse..."
+  local synapse_url="http://localhost:${synapse_port}"
+  local token_in_env; token_in_env=$(grep -m 1 '^MATRIX_ACCESS_TOKEN=' "$env_file" | cut -d= -f2- | tr -d '\r')
+
+  info "Verificando que @${admin_user}:${domain} sea admin de Synapse..."
 
   # 1. Intentar login para obtener token fresco
   local login_resp
@@ -250,9 +269,9 @@ setup_synapse_admin() {
 
   if [[ -z "$fresh_token" ]]; then
     info "Registrando usuario admin en Synapse..."
-    docker exec moodle-matrix-dev-synapse-1 \
+    docker exec "$synapse_container" \
       register_new_matrix_user -c /data/homeserver.yaml --admin \
-      -u "$admin_user" -p "$admin_pass" http://localhost:8008 2>/dev/null || true
+      -u "$admin_user" -p "$admin_pass" "${synapse_url}" 2>/dev/null || true
 
     # Reintentar login
     login_resp=$(curl -sf -X POST "${synapse_url}/_matrix/client/v3/login" \
@@ -262,23 +281,23 @@ setup_synapse_admin() {
   fi
 
   if [[ -z "$fresh_token" ]]; then
-    warn "No se pudo obtener token de Synapse para @${admin_user}:localhost. Omitiendo promoción a admin."
+    warn "No se pudo obtener token de Synapse para @${admin_user}:${domain}. Omitiendo promoción a admin."
     return
   fi
 
   # 2. Comprobar si ya es admin
   local user_info
   user_info=$(curl -sf -H "Authorization: Bearer ${fresh_token}" \
-    "${synapse_url}/_synapse/admin/v2/users/@${admin_user}:localhost" 2>/dev/null || echo '')
+    "${synapse_url}/_synapse/admin/v2/users/@${admin_user}:${domain}" 2>/dev/null || echo '')
   local is_admin; is_admin=$(echo "$user_info" | grep -o '"admin":[^,}]*' | cut -d: -f2 | tr -d ' ' || true)
 
   if [[ "$is_admin" == "true" ]]; then
-    ok "@${admin_user}:localhost ya es admin de Synapse."
+    ok "@${admin_user}:${domain} ya es admin de Synapse."
   else
-    info "Promoviendo @${admin_user}:localhost a admin de Synapse (vía DB)..."
-    docker exec moodle-matrix-dev-synapse-1 python -c "import sqlite3; conn = sqlite3.connect('/data/homeserver.db'); conn.execute('UPDATE users SET admin = 1 WHERE name = \'@${admin_user}:localhost\''); conn.commit(); conn.close()" 2>/dev/null || true
+    info "Promoviendo @${admin_user}:${domain} a admin de Synapse (vía DB)..."
+    docker exec "$synapse_container" python -c "import sqlite3; conn = sqlite3.connect('/data/homeserver.db'); conn.execute('UPDATE users SET admin = 1 WHERE name = \'@${admin_user}:${domain}\''); conn.commit(); conn.close()" 2>/dev/null || true
     # Reiniciar synapse para asegurar que el cambio de DB se aplique en memoria
-    docker restart moodle-matrix-dev-synapse-1 >/dev/null
+    docker restart "$synapse_container" >/dev/null
     
     # Esperar a que vuelva a levantar
     sleep 5
@@ -289,7 +308,7 @@ setup_synapse_admin() {
       fi
       sleep 2
     done
-    ok "@${admin_user}:localhost promovido a admin de Synapse y servicio reiniciado."
+    ok "@${admin_user}:${domain} promovido a admin de Synapse y servicio reiniciado."
 
     # Obtener token fresco tras el reinicio
     login_resp=$(curl -sf --max-time 10 -X POST "${synapse_url}/_matrix/client/v3/login" \
@@ -314,22 +333,32 @@ setup_synapse_admin() {
 ## @brief Registra el bot en Synapse y obtiene su Access Token, guardándolo en .env
 setup_bot_token() {
   local root_env="${ROOT_DIR}/.env"
+  local synapse_port; synapse_port=$(grep -m 1 '^SYNAPSE_PUERTO_HOST=' "$root_env" | cut -d= -f2- | tr -d '\r')
+  local synapse_container; synapse_container=$(grep -m 1 '^SYNAPSE_NOMBRE_CONTENEDOR=' "$root_env" | cut -d= -f2- | tr -d '\r')
+  local bot_username; bot_username=$(grep -m 1 '^MATRIX_BOT_USER=' "$root_env" | cut -d= -f2- | tr -d '\r' | sed 's/@//' | cut -d: -f1)
+
+  [[ -z "$synapse_port" ]] && error "SYNAPSE_PUERTO_HOST no está definido en .env"
+  [[ -z "$synapse_container" ]] && error "SYNAPSE_NOMBRE_CONTENEDOR no está definido en .env"
+  [[ -z "$bot_username" ]] && error "MATRIX_BOT_USER no está definido en .env"
+
+  local synapse_url="http://localhost:${synapse_port}"
   local bot_token; bot_token=$(grep -E "^BOT_ACCESS_TOKEN=" "$root_env" | cut -d= -f2- || true)
   
   if [[ -z "$bot_token" ]]; then
-    info "Generando Access Token para el bot (llm_wiki_bot)..."
+    info "Generando Access Token para el bot (${bot_username})..."
     local bot_pass; bot_pass=$(grep -m 1 "^SYNAPSE_ADMIN_PASSWORD=" "$root_env" | cut -d= -f2- | tr -d '\r')
-    
+    [[ -z "$bot_pass" ]] && error "SYNAPSE_ADMIN_PASSWORD no está definido en .env"
+
     # 1. Registrar usuario bot
-    docker exec moodle-matrix-dev-synapse-1 \
+    docker exec "$synapse_container" \
       register_new_matrix_user -c /data/homeserver.yaml --no-admin \
-      -u "llm_wiki_bot" -p "$bot_pass" http://localhost:8008 2>/dev/null || true
-      
+      -u "$bot_username" -p "$bot_pass" "${synapse_url}" 2>/dev/null || true
+
     # 2. Hacer login para obtener token
     local login_resp
-    login_resp=$(curl -sf -X POST "http://localhost:8008/_matrix/client/v3/login" \
+    login_resp=$(curl -sf -X POST "${synapse_url}/_matrix/client/v3/login" \
       -H 'Content-Type: application/json' \
-      -d "{\"type\":\"m.login.password\",\"user\":\"llm_wiki_bot\",\"password\":\"${bot_pass}\"}" 2>/dev/null || echo '')
+      -d "{\"type\":\"m.login.password\",\"user\":\"${bot_username}\",\"password\":\"${bot_pass}\"}" 2>/dev/null || echo '')
       
     bot_token=$(echo "$login_resp" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4 || true)
     
@@ -423,8 +452,10 @@ cmd_up() {
   
   info "Esperando a que Moodle y mapeo-api estén operativos (Healthchecks)..."
   # Leer el nombre del contenedor dinámico
-  local moodle_container=$(grep -m 1 MOODLE_NOMBRE_CONTENEDOR .env | cut -d= -f2 || echo "moodle-matrix-dev-moodle-1")
-  local mapeo_api_container=$(grep -m 1 MAPEO_API_NOMBRE_CONTENEDOR .env | cut -d= -f2 || echo "moodle-matrix-dev-mapeo-api-1")
+  local moodle_container; moodle_container=$(grep -m 1 '^MOODLE_NOMBRE_CONTENEDOR=' .env | cut -d= -f2- | tr -d '\r')
+  local mapeo_api_container; mapeo_api_container=$(grep -m 1 '^MAPEO_API_NOMBRE_CONTENEDOR=' .env | cut -d= -f2- | tr -d '\r')
+  [[ -z "$moodle_container" ]] && error "MOODLE_NOMBRE_CONTENEDOR no está definido en .env"
+  [[ -z "$mapeo_api_container" ]] && error "MAPEO_API_NOMBRE_CONTENEDOR no está definido en .env"
   
   while true; do
     local m_status=$(docker inspect --format="{{if .State.Health}}{{.State.Health.Status}}{{end}}" "$moodle_container" 2>/dev/null || echo "starting")
@@ -507,6 +538,7 @@ EOF
   cd "${ROOT_DIR}"
   print_summary
 
+}
 
 ## @fn cmd_git()
 ## @brief Configura el repositorio oficial en GitHub usando un contenedor Python efímero.
