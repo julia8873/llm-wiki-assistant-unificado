@@ -56,7 +56,7 @@ class block_bdc_synapse_admin_client {
         $curl = new \curl(['ignoresecurity' => true]);
         $curl->setHeader('Authorization: Bearer ' . $this->token);
         $curl->setHeader('Content-Type: application/json');
-        $domain = getenv('DOMAIN') ?: 'localhost';
+        $domain = getenv('DOMAIN');
         $bot_user = getenv('MATRIX_BOT_USER') ?: '@llm_wiki_bot:' . $domain;
 
         // Obtener el user_id del propietario del token para no invitarle (ya es el creador de la sala).
@@ -108,7 +108,7 @@ class block_bdc_synapse_admin_client {
         $curl->setHeader('Authorization: Bearer ' . $this->token);
         $curl->setHeader('Content-Type: application/json');
 
-        $domain = getenv('DOMAIN') ?: 'localhost';
+        $domain = getenv('DOMAIN');
         $user_id = '@' . $username . ':' . $domain;
         $url = $this->baseurl . '/_synapse/admin/v2/users/' . urlencode($user_id);
 

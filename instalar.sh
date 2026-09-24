@@ -460,13 +460,16 @@ cmd_up() {
       # Configuramos el SSO de Matrix automáticamente si es la primera vez
       if [[ -f "synapse-data/homeserver.yaml" ]] && ! grep -q "password_providers:" "synapse-data/homeserver.yaml"; then
         info "Inyectando configuración SSO de Moodle en Synapse..."
+        local moodle_sso_endpoint=$(grep -m 1 MOODLE_SSO_AUTH_ENDPOINT .env | cut -d= -f2- | tr -d '\r' || echo "http://moodle:8080/blocks/bdc/api/auth.php")
+        # Replace the port if it contains ${MOODLE_PUERTO_CONTENEDOR} as defined in .env
         local moodle_puerto=$(grep -m 1 MOODLE_PUERTO_CONTENEDOR .env | cut -d= -f2 | tr -d '\r' || echo "8080")
+        moodle_sso_endpoint="${moodle_sso_endpoint/\$\{MOODLE_PUERTO_CONTENEDOR\}/$moodle_puerto}"
         cat << EOF >> "synapse-data/homeserver.yaml"
 
 password_providers:
   - module: "rest_auth_provider.RestAuthProvider"
     config:
-      endpoint: "http://moodle:${moodle_puerto}/blocks/bdc/api/auth.php"
+      endpoint: "${moodle_sso_endpoint}"
 EOF
         docker compose restart synapse
         ok "Synapse reiniciado con soporte SSO."
