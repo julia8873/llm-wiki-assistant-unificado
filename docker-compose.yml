@@ -325,6 +325,7 @@ services:
     environment:
       - PYTHONPATH=/shared-pkg
       - DATABASE_URL=${DATABASE_URL}
+      - FRONTEND_URL=${FRONTEND_URL}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - MAPEO_API_TOKEN=${MAPEO_API_TOKEN}
       - MOODLE_AUTH_URL=${MOODLE_AUTH_URL}
@@ -368,6 +369,8 @@ services:
     working_dir: /app
     ports:
       - "${FRONTEND_PUERTO_HOST}:${FRONTEND_PUERTO_CONTENEDOR}"
+    environment:
+      - VITE_API_TARGET_URL=${VITE_API_TARGET_URL}
 
 volumes:
   mariadb_data:

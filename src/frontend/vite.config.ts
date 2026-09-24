@@ -13,8 +13,8 @@ export default defineConfig(({ mode }) => {
       host: true,
       proxy: {
         '/api': {
-          // Permite sobrescribir la URL desde el .env, pero mantiene el valor de Docker por defecto
-          target: env.VITE_API_TARGET_URL || 'http://metrics-api:8000',
+          // La URL se inyecta desde docker-compose.yml (o .env)
+          target: env.VITE_API_TARGET_URL,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, '')
         }
