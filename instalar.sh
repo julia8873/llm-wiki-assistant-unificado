@@ -496,6 +496,7 @@ EOF
           # Recrear Moodle para que cargue el MATRIX_ACCESS_TOKEN actualizado en .env
           local moodle_container; moodle_container=$(grep -m 1 MOODLE_NOMBRE_CONTENEDOR .env | cut -d= -f2 | tr -d '\r' || echo "moodle-matrix-dev-moodle-1")
           info "Reiniciando Moodle para cargar el nuevo MATRIX_ACCESS_TOKEN..."
+          unset MATRIX_ACCESS_TOKEN BOT_ACCESS_TOKEN
           docker compose up -d --force-recreate --no-deps moodle >/dev/null 2>&1 || true
           # Esperar a que Moodle vuelva a estar healthy
           sleep 10
