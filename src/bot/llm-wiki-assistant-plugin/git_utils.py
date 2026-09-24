@@ -11,7 +11,9 @@ from contextlib import asynccontextmanager
 
 logger = logging.getLogger(__name__)
 
-redis_client = redis.Redis(host='redis', port=6379, decode_responses=True)
+redis_host = os.environ.get('REDIS_INTERNAL_HOSTNAME', 'redis')
+redis_port = int(os.environ.get('REDIS_PORT', 6379))
+redis_client = redis.Redis(host=redis_host, port=redis_port, decode_responses=True)
 
 class LockAcquisitionError(Exception):
     pass
