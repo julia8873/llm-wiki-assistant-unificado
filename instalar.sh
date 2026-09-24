@@ -147,16 +147,16 @@ generate_env() {
   fi
 
   # Generar secretos de seguridad automáticamente
-  local secrets=("AGENT_HMAC_SECRET" "INTERNAL_SERVICE_TOKEN" "PII_SECRET_KEY" "MAUBOT_CRYPTO_PICKLE_KEY" "JWT_SECRET_KEY")
+  local secrets=("AGENT_HMAC_SECRET" "INTERNAL_SERVICE_TOKEN" "PII_SECRET_KEY" "MAUBOT_CRYPTO_PICKLE_KEY" "JWT_SECRET_KEY" "SYNAPSE_REGISTRATION_SECRET" "SYNAPSE_MACAROON_SECRET" "SYNAPSE_FORM_SECRET")
   for secret in "${secrets[@]}"; do
-    if grep -q "${secret}=.*GENERATE_RANDOM" "$env_file"; then
+    if grep -qE "${secret}=.*(GENERATE_RANDOM|CHANGEME)" "$env_file"; then
       local new_secret
       if [[ "$secret" == "PII_SECRET_KEY" ]]; then
         new_secret=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '\n')
       else
         new_secret=$(openssl rand -hex 32)
       fi
-      sed -i "s/${secret}=.*GENERATE_RANDOM/${secret}=${new_secret}/" "$env_file"
+      sed -i -E "s/${secret}=.*(GENERATE_RANDOM|CHANGEME)/${secret}=${new_secret}/" "$env_file"
       info "Se ha generado un ${secret} aleatorio para esta instancia."
     fi
   done
@@ -428,7 +428,7 @@ cmd_up() {
   # La plantilla usa ${SYNAPSE_SERVER_NAME}; el .env lo expone como DOMAIN
   SYNAPSE_SERVER_NAME="${DOMAIN}"
   set +a
-  envsubst < "src/matrix/synapse-data/homeserver.yaml" \
+  envsubst < "src/matrix/synapse-data/homeserver.yaml.example" \
             > "src/matrix/synapse-data/homeserver.yaml.tmp" && \
     mv "src/matrix/synapse-data/homeserver.yaml.tmp" \
        "src/matrix/synapse-data/homeserver.yaml"
