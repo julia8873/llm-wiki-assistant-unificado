@@ -171,18 +171,28 @@ generate_env() {
   if [[ -n "$m_pass" || -n "$m_key" ]]; then
     info "Inyectando credenciales en Maubot..."
     check_docker
-    docker run --rm -v "${ROOT_DIR}/src/bot:/data" alpine sh -c "
-      if [ -n \"$m_pass\" ]; then
-        apk add --no-cache python3 py3-bcrypt >/dev/null 2>&1 || true
-        m_hash=\$(python3 -c \"import bcrypt; print(bcrypt.hashpw('${m_pass}'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'))\" 2>/dev/null)
-        if [ -n \"\$m_hash\" ]; then
-          sed -i \"s|^[[:space:]]*admin: .*|    admin: \$m_hash|\" /data/config.yaml 2>/dev/null || true
+    if python3 -c "import bcrypt" 2>/dev/null; then
+      if [ -n "$m_pass" ]; then
+        m_hash=$(python3 -c "import bcrypt; print(bcrypt.hashpw('${m_pass}'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'))")
+        sed -i "s|^[[:space:]]*admin: .*|    admin: $m_hash|" "${ROOT_DIR}/src/bot/config.yaml" 2>/dev/null || sudo sed -i "s|^[[:space:]]*admin: .*|    admin: $m_hash|" "${ROOT_DIR}/src/bot/config.yaml" || true
+      fi
+      if [ -n "$m_key" ]; then
+        sed -i "s|pickle_key: .*|pickle_key: \"${m_key}\"|" "${ROOT_DIR}/src/bot/config.yaml" 2>/dev/null || sudo sed -i "s|pickle_key: .*|pickle_key: \"${m_key}\"|" "${ROOT_DIR}/src/bot/config.yaml" || true
+      fi
+    else
+      docker run --rm -v "${ROOT_DIR}/src/bot:/data" alpine sh -c "
+        if [ -n \"$m_pass\" ]; then
+          apk add --timeout 10 --no-cache python3 py3-bcrypt || true
+          m_hash=\$(python3 -c \"import bcrypt; print(bcrypt.hashpw('${m_pass}'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'))\" 2>/dev/null)
+          if [ -n \"\$m_hash\" ]; then
+            sed -i \"s|^[[:space:]]*admin: .*|    admin: \$m_hash|\" /data/config.yaml 2>/dev/null || true
+          fi
         fi
-      fi
-      if [ -n \"$m_key\" ]; then
-        sed -i \"s|pickle_key: .*|pickle_key: \\\"${m_key}\\\"|\" /data/config.yaml 2>/dev/null || true
-      fi
-    "
+        if [ -n \"$m_key\" ]; then
+          sed -i \"s|pickle_key: .*|pickle_key: \\\"${m_key}\\\"|\" /data/config.yaml 2>/dev/null || true
+        fi
+      "
+    fi
     # Reiniciamos maubot por si estaba corriendo, para que tome el nuevo config.yaml
     docker compose -f "${ROOT_DIR}/docker-compose.yml" restart maubot >/dev/null 2>&1 || true
   fi
