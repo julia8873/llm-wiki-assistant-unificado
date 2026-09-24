@@ -30,10 +30,10 @@ database:
   name: psycopg2
   allow_unsafe_locale: true
   args:
-    user: "mapeo_user"
-    password: "mapeo_db_pass"
-    database: "mapeo_db"
-    host: postgres
+    user: ${POSTGRES_USER} 
+    password: ${POSTGRES_PASSWORD}
+    database: ${POSTGRES_DB}
+    host: ${POSTGRES_NOMBRE_CONTENEDOR}
     cp_min: 5
     cp_max: 10
 log_config: "/data/homeserver.log.config"
