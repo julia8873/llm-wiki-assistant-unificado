@@ -37,6 +37,8 @@ src/matrix/synapse-data/*.pid
 src/matrix/synapse-data/media_store/
 # Copia gestionada por instalar.sh (virtiofs no admite bind mount de archivo dentro de volumen)
 src/matrix/synapse-data/rest_auth_provider.py
+src/matrix/synapse-data/homeserver.yaml
+src/matrix/synapse-data/homeserver.yaml.tmp
 
 # Archivos basura del bot
 src/bot/trash/

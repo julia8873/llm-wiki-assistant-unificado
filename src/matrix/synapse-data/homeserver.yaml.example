@@ -9,14 +9,14 @@
 # For more information on how to configure Synapse, including a complete accounting of
 # each option, go to docs/usage/configuration/config_documentation.md or
 # https://element-hq.github.io/synapse/latest/usage/configuration/config_documentation.html
-server_name: "localhost"
+server_name: "${SYNAPSE_SERVER_NAME}"
 pid_file: /data/homeserver.pid
 
 # Permitir a Element Web conectarse desde el navegador
 cors_allowed_origins:
   - '*'
 listeners:
-  - port: 8008
+  - port: ${SYNAPSE_PUERTO_CONTENEDOR}
     bind_addresses: ['0.0.0.0']
     resources:
     - compress: false
@@ -30,19 +30,19 @@ database:
   name: psycopg2
   allow_unsafe_locale: true
   args:
-    user: mapeo_user 
-    password: mapeo_db_pass
-    database: mapeo_db
-    host: moodle-matrix-dev-postgres-1
+    user: ${POSTGRES_USER} 
+    password: ${POSTGRES_PASSWORD}
+    database: ${POSTGRES_DB}
+    host: ${POSTGRES_NOMBRE_CONTENEDOR}
     cp_min: 5
     cp_max: 10
 log_config: "/data/homeserver.log.config"
 media_store_path: /data/media_store
-registration_shared_secret: "CHANGEME"
+registration_shared_secret: "${SYNAPSE_REGISTRATION_SECRET}"
 report_stats: false
-macaroon_secret_key: "CHANGEME"
-form_secret: "CHANGEME"
-signing_key_path: "/data/localhost.signing.key"
+macaroon_secret_key: "${SYNAPSE_MACAROON_SECRET}"
+form_secret: "${SYNAPSE_FORM_SECRET}"
+signing_key_path: "/data/${SYNAPSE_SERVER_NAME}.signing.key"
 trusted_key_servers:
   - server_name: "matrix.org"
 
@@ -52,7 +52,7 @@ enable_registration_without_verification: true
 password_providers:
   - module: "rest_auth_provider.RestAuthProvider"
     config:
-      endpoint: "http://moodle:8080/blocks/bdc/api/auth.php"
+      endpoint: "${MOODLE_SSO_AUTH_ENDPOINT}"
 
 # Aumentar límites para evitar M_LIMIT_EXCEEDED en logins locales
 rc_login:
