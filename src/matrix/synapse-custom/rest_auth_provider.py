@@ -50,8 +50,9 @@ class RestAuthProvider:
                 return response.status, response.read()
         
         try:
+            from twisted.internet import threads
             # Petición HTTP delegada a un hilo para evitar bloquear el event loop de Synapse
-            status, body = await asyncio.to_thread(_do_request)
+            status, body = await threads.deferToThread(_do_request)
             if status == 200:
                 res_body = json.loads(body.decode('utf-8'))
                 if res_body.get('auth') is True:

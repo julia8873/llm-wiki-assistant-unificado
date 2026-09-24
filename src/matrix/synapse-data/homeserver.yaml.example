@@ -53,6 +53,7 @@ password_providers:
   - module: "rest_auth_provider.RestAuthProvider"
     config:
       endpoint: "${MOODLE_SSO_AUTH_ENDPOINT}"
+      host_header: "${MOODLE_EXTERNAL_URL}"
 
 # Aumentar límites para evitar M_LIMIT_EXCEEDED en logins locales
 rc_login:
