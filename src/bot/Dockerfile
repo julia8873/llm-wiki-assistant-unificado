@@ -6,3 +6,8 @@ RUN apk add --no-cache git build-base python3-dev libffi-dev py3-pip py3-wheel
 RUN pip install --break-system-packages httpx asyncpg pgvector pypdf rq redis tenacity presidio-analyzer presidio-anonymizer spacy cryptography PyJWT sqlalchemy psycopg2-binary
 RUN python -m spacy download es_core_news_lg --break-system-packages
 RUN python -m spacy download en_core_web_lg --break-system-packages
+
+# Add a non-root user for security
+RUN addgroup -g 1000 botuser && adduser -D -u 1000 -G botuser botuser
+RUN mkdir -p /data && chown -R botuser:botuser /data
+USER botuser

@@ -60,6 +60,7 @@ services:
 
   synapse:
     image: matrixdotorg/synapse:latest
+    user: "${UID:-1000}:${GID:-1000}"
     container_name: ${SYNAPSE_NOMBRE_CONTENEDOR}
     ports:
       - "${SYNAPSE_PUERTO_HOST}:${SYNAPSE_PUERTO_CONTENEDOR}"
@@ -368,6 +369,7 @@ services:
 
   frontend:
     image: node:20-alpine
+    user: "node"
     container_name: ${FRONTEND_NOMBRE_CONTENEDOR}
     command: ["sh", "-c", "npm install && npm run dev"]
     volumes:
