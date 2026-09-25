@@ -47,18 +47,16 @@ check_docker() {
 }
 
 
-## @fn copy_if_missing()
-## @brief Copia un archivo plantilla (ej. .example) a su destino real si no existe.
-## @param $1 Ruta absoluta del fichero origen.
+## @fn check_file_exists()
+## @brief Comprueba si un archivo de configuración existe.
+## @param $1 Ruta absoluta del fichero origen (plantilla).
 ## @param $2 Ruta absoluta del fichero destino.
-copy_if_missing() {
+check_file_exists() {
   local src="$1" dst="$2"
-  if [[ -f "$dst" ]]; then
-    skip "$(basename "$dst") ya existe, no se sobreescribe."
+  if [[ ! -f "$dst" ]]; then
+    error "Falta el archivo $(basename "$dst"). Por favor, cópialo desde $(basename "$src") e inyecta los secretos reales."
   else
-    cp "$src" "$dst"
-    ok "$(basename "$dst") creado desde $(basename "$src")."
-    warn "  Edita ${dst} e inyecta los secretos reales."
+    skip "$(basename "$dst") ya existe."
   fi
 }
 
@@ -130,14 +128,9 @@ generate_env() {
 
   info "Comprobando ${env_file}..."
 
-  # Si no existe el .env, crearlo desde la plantilla
-  if [[ ! -f "$env_file" ]]; then
-    copy_if_missing "${ROOT_DIR}/.env.example" "$env_file"
-  fi
-
-  # Configurar plantillas base
-  copy_if_missing "${ROOT_DIR}/config/config.yaml.example"                        "${ROOT_DIR}/config/config.yaml"
-  copy_if_missing "${ROOT_DIR}/src/bot/config.yaml.example"      "${ROOT_DIR}/src/bot/config.yaml"
+  check_file_exists "${ROOT_DIR}/.env.example" "$env_file"
+  check_file_exists "${ROOT_DIR}/config/config.yaml.example"                        "${ROOT_DIR}/config/config.yaml"
+  check_file_exists "${ROOT_DIR}/src/bot/config.yaml.example"      "${ROOT_DIR}/src/bot/config.yaml"
 
   # Generar MAPEO_API_TOKEN si está en modo default
   if grep -q "MAPEO_API_TOKEN=changeme" "$env_file"; then
