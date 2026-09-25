@@ -51,23 +51,26 @@ Contiene los distintos microservicios:
    ```
 
 2. **Preparar la Configuración:**
-   Copia las plantillas de configuración a sus respectivos archivos finales:
+   Copia la plantilla de configuración:
    ```bash
    cp .env.example .env
-   cp config/config.yaml.example config/config.yaml
    ```
 
-3. **Configurar Variables de Entorno (`.env`) y Configuración Global (`config.yaml`):**
+3. **Configurar Variables de Entorno (`.env`):**
    - Abre el archivo `.env` recién creado y cambia todas las contraseñas y valores sensibles (marcados como `CHANGE_ME`).
       - **Importante para GitHub:** El token de acceso personal (PAT) clásico debe tener marcado obligatoriamente el scope completo de **`repo`**. Este token se coloca en la variable `GITHUB_PAT`.
-
-   - Abre `config/config.yaml` y define tu proveedor Git activo (`git.proveedor_activo`, ej. `github`) y configura sus variables.
 
   Si estás detrás de un proxy inverso, deberás revisar que la URL base de moodle y element corresponde al host:puerto o host/path según tengas configurado tu proxy.
 
   En Moodle se puede cambiar entrando en el contenedor y modificando la variable CFG->wwwroot dentro de /bitnami/moodel/config.php . En Element hay que cambiar el base_url dentro del archivo src/matrix/element/config.json
 
-4. Propagar los cambios de variables por los archivos de configuración usando el script instalar.sh
+4. **Añadir tu usuario para poder ejecutar los scripts**
+   ```bash
+   sudo usermod -aG docker $USER
+   newgrp docker
+   # y ya podrás ejecutar
+   ./instalar.sh
+   ```
    
 5. **Levantar la Infraestructura:**
    Ejecuta Docker Compose para construir y levantar todos los microservicios:
