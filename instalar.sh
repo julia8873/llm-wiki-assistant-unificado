@@ -53,14 +53,10 @@ check_docker() {
 ## @param $2 Ruta absoluta del fichero destino.
 check_file_exists() {
   local src="$1" dst="$2"
-  # Obtener rutas relativas para los mensajes
-  local rel_src="${src#${ROOT_DIR}/}"
-  local rel_dst="${dst#${ROOT_DIR}/}"
-  
   if [[ ! -f "$dst" ]]; then
-    error "Falta el archivo ${rel_dst}. Por favor, cópialo desde ${rel_src} e inyecta los secretos reales."
+    error "Falta el archivo $(basename "$dst"). Por favor, cópialo desde $(basename "$src") e inyecta los secretos reales."
   else
-    skip "${rel_dst} ya existe."
+    skip "$(basename "$dst") ya existe."
   fi
 }
 
@@ -133,8 +129,16 @@ generate_env() {
   info "Comprobando ${env_file}..."
 
   check_file_exists "${ROOT_DIR}/.env.example" "$env_file"
-  check_file_exists "${ROOT_DIR}/config/config.yaml.example"                        "${ROOT_DIR}/config/config.yaml"
   
+  if [[ ! -f "${ROOT_DIR}/config/config.yaml" ]]; then
+    set -a
+    source "$env_file" 2>/dev/null || true
+    set +a
+    envsubst < "${ROOT_DIR}/config/config.yaml.example" > "${ROOT_DIR}/config/config.yaml"
+    ok "config/config.yaml generado e inyectado desde la plantilla."
+  else
+    skip "config/config.yaml ya existe."
+  fi
   if [[ ! -f "${ROOT_DIR}/src/bot/config.yaml" ]]; then
     cp "${ROOT_DIR}/src/bot/config.yaml.example" "${ROOT_DIR}/src/bot/config.yaml"
     ok "src/bot/config.yaml creado desde la plantilla."
