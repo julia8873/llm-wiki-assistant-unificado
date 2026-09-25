@@ -7,8 +7,8 @@ servicios:
 
   mariadb:
     nombre_contenedor: "moodle-matrix-dev-mariadb-1"
-    puerto_host: 3306
-    puerto_contenedor: 3306
+    puerto_host: ${MARIADB_PUERTO_CONTENEDOR}
+    puerto_contenedor: ${MARIADB_PUERTO_CONTENEDOR}
     nombre_bd: "moodle_db"
 
   synapse:
@@ -39,9 +39,9 @@ servicios:
 
   docs:
     nombre_contenedor: "llm-wiki-docs"
-    puerto_host: 8005
+    puerto_host: ${DOXYGEN_PUERTO_HOST}
     puerto_contenedor: 8000
-    url_base: "http://${DOMAIN}:8005"
+    url_base: "http://${DOMAIN}:${DOXYGEN_PUERTO_HOST}"
 
   # para crear contenedor de ollama en local
   llm_server_opcional:
