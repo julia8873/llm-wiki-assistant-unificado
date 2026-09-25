@@ -398,8 +398,15 @@ cmd_up() {
   fi
 
   info "Levantando servicios Docker Compose (Modo: ${env_mode})..."
-  local domain; domain=$(grep -m 1 '^DOMAIN=' "${ROOT_DIR}/.env" | cut -d= -f2- | tr -d '\r' || echo "localhost")
-  local maubot_url; maubot_url=$(grep -m 1 '^MAUBOT_URL_BASE=' "${ROOT_DIR}/.env" | cut -d= -f2- | tr -d '\r' || echo "http://${domain}:29317")
+  local domain; domain=$(grep -m 1 '^DOMAIN=' "${ROOT_DIR}/.env" | cut -d= -f2- | tr -d '\r' || true)
+  if [[ -z "$domain" ]]; then
+    error "DOMAIN no está configurado en el archivo .env"
+  fi
+  
+  local maubot_url; maubot_url=$(grep -m 1 '^MAUBOT_URL_BASE=' "${ROOT_DIR}/.env" | cut -d= -f2- | tr -d '\r' || true)
+  if [[ -z "$maubot_url" ]]; then
+    error "MAUBOT_URL_BASE no está configurado en el archivo .env"
+  fi
   
   info "Inyectando variables de entorno en estáticos..."
   sed -i 's|\${MAUBOT_URL_BASE}|'"${maubot_url}"'|g' "${ROOT_DIR}/src/bot/config.yaml" 2>/dev/null || true
