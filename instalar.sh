@@ -53,10 +53,14 @@ check_docker() {
 ## @param $2 Ruta absoluta del fichero destino.
 check_file_exists() {
   local src="$1" dst="$2"
+  # Obtener rutas relativas para los mensajes
+  local rel_src="${src#${ROOT_DIR}/}"
+  local rel_dst="${dst#${ROOT_DIR}/}"
+  
   if [[ ! -f "$dst" ]]; then
-    error "Falta el archivo $(basename "$dst"). Por favor, cópialo desde $(basename "$src") e inyecta los secretos reales."
+    error "Falta el archivo ${rel_dst}. Por favor, cópialo desde ${rel_src} e inyecta los secretos reales."
   else
-    skip "$(basename "$dst") ya existe."
+    skip "${rel_dst} ya existe."
   fi
 }
 
