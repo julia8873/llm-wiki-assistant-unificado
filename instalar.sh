@@ -134,7 +134,13 @@ generate_env() {
 
   check_file_exists "${ROOT_DIR}/.env.example" "$env_file"
   check_file_exists "${ROOT_DIR}/config/config.yaml.example"                        "${ROOT_DIR}/config/config.yaml"
-  check_file_exists "${ROOT_DIR}/src/bot/config.yaml.example"      "${ROOT_DIR}/src/bot/config.yaml"
+  
+  if [[ ! -f "${ROOT_DIR}/src/bot/config.yaml" ]]; then
+    cp "${ROOT_DIR}/src/bot/config.yaml.example" "${ROOT_DIR}/src/bot/config.yaml"
+    ok "src/bot/config.yaml creado desde la plantilla."
+  else
+    skip "src/bot/config.yaml ya existe."
+  fi
 
   # Generar MAPEO_API_TOKEN si está en modo default
   if grep -q "MAPEO_API_TOKEN=changeme" "$env_file"; then
