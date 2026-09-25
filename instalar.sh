@@ -74,10 +74,6 @@ cmd_install_all() {
   echo "    Raíz: ${ROOT_DIR}"
   echo ""
 
-  echo "--- Fase: Configuración Base y Secretos ---"
-  generate_env
-  echo ""
-
   echo "--- Fase: Stack Docker ---"
 
   cmd_up "$@"
