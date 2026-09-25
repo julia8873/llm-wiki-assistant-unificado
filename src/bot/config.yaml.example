@@ -21,7 +21,7 @@ plugin_directories:
     # The directories from which plugins should be loaded.
     # Duplicate plugin IDs will be moved to the trash.
     load:
-    - /data/plugins
+    - /data/llm-wiki-assistant-plugin
     trash: /data/trash
 
 # Configuration for storing plugin databases
