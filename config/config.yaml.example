@@ -3,7 +3,7 @@ servicios:
     nombre_contenedor: "moodle-matrix-dev-moodle-1"
     puerto_host: ${MOODLE_PUERTO_HOST}
     puerto_contenedor: ${MOODLE_PUERTO_CONTENEDOR}
-    url_base: "http://${DOMAIN}:${MOODLE_PUERTO_HOST}"
+    url_base: "${MOODLE_URL_BASE}"
 
   mariadb:
     nombre_contenedor: "moodle-matrix-dev-mariadb-1"
@@ -15,7 +15,7 @@ servicios:
     nombre_contenedor: "moodle-matrix-dev-synapse-1"
     puerto_host: ${SYNAPSE_PUERTO_HOST}
     puerto_contenedor: ${SYNAPSE_PUERTO_CONTENEDOR}
-    url_base: "http://${DOMAIN}:${SYNAPSE_PUERTO_HOST}"
+    url_base: "${SYNAPSE_URL_BASE}"
     url_interna: "http://matrix-synapse:${SYNAPSE_PUERTO_CONTENEDOR}"
     nombre_servidor: "${DOMAIN}"
 
@@ -23,25 +23,25 @@ servicios:
     nombre_contenedor: "moodle-matrix-dev-element-1"
     puerto_host: ${ELEMENT_PUERTO_HOST}
     puerto_contenedor: ${ELEMENT_PUERTO_CONTENEDOR}
-    url_base: "http://${DOMAIN}:${ELEMENT_PUERTO_HOST}"
+    url_base: "${ELEMENT_URL_BASE}"
 
   maubot:
     nombre_contenedor: "moodle-matrix-dev-maubot-1"
     puerto_host: ${MAUBOT_PUERTO_HOST}
     puerto_contenedor: ${MAUBOT_PUERTO_CONTENEDOR}
-    url_base: "http://${DOMAIN}:${MAUBOT_PUERTO_HOST}"
+    url_base: "${MAUBOT_URL_BASE}"
 
   mapeo_api:
     nombre_contenedor: "moodle-matrix-dev-mapeo-api-1"
     puerto_host: ${MAPEO_API_PUERTO_HOST}
     puerto_contenedor: ${MAPEO_API_PUERTO_CONTENEDOR}
-    url_base: "http://${DOMAIN}:${MAPEO_API_PUERTO_HOST}"
+    url_base: "${MAPEO_API_URL_BASE}"
 
   docs:
     nombre_contenedor: "llm-wiki-docs"
     puerto_host: ${DOXYGEN_PUERTO_HOST}
     puerto_contenedor: 8000
-    url_base: "http://${DOMAIN}:${DOXYGEN_PUERTO_HOST}"
+    url_base: "${DOXYGEN_URL_BASE}"
 
   # para crear contenedor de ollama en local
   llm_server_opcional:
@@ -49,7 +49,7 @@ servicios:
     nombre_contenedor: "ollama-llm-service"
     puerto_host: ${OLLAMA_PORT}
     puerto_contenedor: ${OLLAMA_PORT}
-    url_base: "http://${DOMAIN}:${OLLAMA_PORT}"
+    url_base: "${OLLAMA_URL_BASE}"
 
 git:
   # Proveedor activo: "github", "gitlab" o "self_hosted"
