@@ -399,8 +399,12 @@ cmd_up() {
 
   info "Levantando servicios Docker Compose (Modo: ${env_mode})..."
   local domain; domain=$(grep -m 1 '^DOMAIN=' "${ROOT_DIR}/.env" | cut -d= -f2- | tr -d '\r' || echo "localhost")
+  local maubot_url; maubot_url=$(grep -m 1 '^MAUBOT_URL_BASE=' "${ROOT_DIR}/.env" | cut -d= -f2- | tr -d '\r' || echo "http://${domain}:29317")
+  
+  info "Inyectando variables de entorno en estáticos..."
+  sed -i 's|\${MAUBOT_URL_BASE}|'"${maubot_url}"'|g' "${ROOT_DIR}/src/bot/config.yaml" 2>/dev/null || true
+
   if [[ "$domain" != "localhost" ]]; then
-    info "Inyectando DOMAIN=${domain} en archivos estáticos..."
     sed -i 's/\${DOMAIN}/'"${domain}"'/g' "${ROOT_DIR}/src/matrix/element/config.json" 2>/dev/null || true
     sed -i 's/\${DOMAIN}/'"${domain}"'/g' "${ROOT_DIR}/src/bot/config.yaml" 2>/dev/null || true
   fi
