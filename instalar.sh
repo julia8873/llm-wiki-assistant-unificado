@@ -414,7 +414,6 @@ cmd_up() {
   sed -i 's|\${MAUBOT_PUBLIC_URL}|'"${maubot_public_url}"'|g' "${ROOT_DIR}/src/bot/config.yaml" 2>/dev/null || true
 
   if [[ "$domain" != "localhost" ]]; then
-    sed -i 's/\${DOMAIN}/'"${domain}"'/g' "${ROOT_DIR}/src/matrix/element/config.json" 2>/dev/null || true
     sed -i 's/\${DOMAIN}/'"${domain}"'/g' "${ROOT_DIR}/src/bot/config.yaml" 2>/dev/null || true
   fi
 
@@ -443,12 +442,12 @@ cmd_up() {
        "src/matrix/synapse-data/homeserver.yaml"
   ok "homeserver.yaml configurado."
 
-  info "Aplicando variables de entorno a Element config.json..."
-  envsubst < "src/matrix/element/config.json" \
+  info "Generando Element config.json desde la plantilla..."
+  envsubst < "src/matrix/element/config.json.template" \
             > "src/matrix/element/config.json.tmp" && \
     mv "src/matrix/element/config.json.tmp" \
        "src/matrix/element/config.json"
-  ok "Element config.json configurado."
+  ok "Element config.json generado."
 
   local compose_args="-f docker-compose.yml"
   if [[ "$env_mode" == "dev" ]]; then
