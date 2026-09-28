@@ -1,85 +1,91 @@
-# The full URI to the database. SQLite and Postgres are fully supported.
-# Format examples:
+# URI completa de la base de datos. SQLite y Postgres están totalmente soportados.
+# Ejemplos de formato:
 #   SQLite:   sqlite:filename.db
-#   Postgres: postgresql://username:password@hostname/dbname
+#   Postgres: postgresql://usuario:contraseña@hostname/nombre_bd
 database: sqlite:/data/maubot.db
 crypto_db_pickle_key: "${MAUBOT_CRYPTO_PICKLE_KEY}"
 
-# Separate database URL for the crypto database. "default" means use the same database as above.
+# URL de base de datos separada para la base de datos de cifrado. "default" significa usar la misma que arriba.
 crypto_database: default
 
-# Additional arguments for asyncpg.create_pool() or sqlite3.connect()
+# Argumentos adicionales para asyncpg.create_pool() o sqlite3.connect()
 # https://magicstack.github.io/asyncpg/current/api/index.html#asyncpg.pool.create_pool
 # https://docs.python.org/3/library/sqlite3.html#sqlite3.connect
-# For sqlite, min_size is used as the connection thread pool size and max_size is ignored.
+# Para sqlite, min_size se usa como tamaño del pool de hilos de conexión y max_size se ignora.
 database_opts:
     min_size: 1
     max_size: 10
+
 plugin_directories:
-    # The directory where uploaded new plugins should be stored.
+    # Directorio donde se almacenarán los plugins nuevos subidos.
     upload: /data/plugins
-    # The directories from which plugins should be loaded.
-    # Duplicate plugin IDs will be moved to the trash.
+    # Directorios desde los que se cargarán los plugins.
+    # Los plugins con IDs duplicados se moverán a la papelera.
     load:
     - /data/llm-wiki-assistant-plugin
     trash: /data/trash
 
-# Configuration for storing plugin databases
+# Configuración para el almacenamiento de bases de datos de plugins
 plugin_databases:
-    # The directory where SQLite plugin databases should be stored.
+    # Directorio donde se almacenarán las bases de datos SQLite de los plugins.
     sqlite: /data/dbs
-    # The connection URL for plugin databases. If null, all plugins will get SQLite databases.
-    # If set, plugins using the new asyncpg interface will get a Postgres connection instead.
-    # Plugins using the legacy SQLAlchemy interface will always get a SQLite connection.
+    # URL de conexión para las bases de datos de plugins. Si es null, todos los plugins usarán SQLite.
+    # Si se define, los plugins que usen la nueva interfaz asyncpg obtendrán una conexión Postgres.
+    # Los plugins que usen la interfaz legacy SQLAlchemy siempre usarán SQLite.
     #
-    # To use the same connection pool as the default database, set to "default"
-    # (the default database above must be postgres to do this).
+    # Para usar el mismo pool de conexiones que la base de datos principal, establece "default"
+    # (la base de datos principal de arriba debe ser postgres para esto).
     #
-    # When enabled, maubot will create separate Postgres schemas in the database for each plugin.
-    # To view schemas in psql, use `\dn`. To view enter and interact with a specific schema,
-    # use `SET search_path = name` (where `name` is the name found with `\dn`) and then use normal
-    # SQL queries/psql commands.
+    # Cuando está habilitado, maubot creará esquemas Postgres separados en la BD por cada plugin.
+    # Para ver los esquemas en psql, usa `\dn`. Para entrar e interactuar con un esquema concreto,
+    # usa `SET search_path = nombre` (donde `nombre` es el encontrado con `\dn`) y luego
+    # ejecuta consultas SQL o comandos psql normales.
     postgres:
-    # Maximum number of connections per plugin instance.
+    # Número máximo de conexiones por instancia de plugin.
     postgres_max_conns_per_plugin: 3
-    # Overrides for the default database_opts when using a non-"default" postgres connection string.
+    # Sobrescrituras de database_opts por defecto al usar una cadena de conexión postgres distinta de "default".
     postgres_opts: {}
 
 server:
-    # The IP and port to listen to.
+    # IP y puerto donde escucha el servidor.
     hostname: 0.0.0.0
     port: 29316
-    # Public base URL where the server is visible.
-    # When using a subpath here, your reverse proxy must strip out the prefix.
-    public_url: "${MAUBOT_URL_BASE}"
-    # The base path for the UI. Note that this does not change the API path.
-    # Add a path prefix to public_url if you want everything on a subpath.
+    # URL base pública donde el servidor es visible para los clientes.
+    # Si usas una subruta aquí, el proxy inverso debe eliminar el prefijo.
+    # Establece este valor según cómo accedan los clientes:
+    #   - Sin proxy inverso (local): http://localhost:29317
+    #   - Con proxy inverso:         https://nombredelhost.com
+    # Configura MAUBOT_PUBLIC_URL en el archivo .env según corresponda.
+    public_url: "${MAUBOT_PUBLIC_URL}"
+    # Ruta base para la interfaz de administración. No cambia la ruta de la API.
+    # Añade un prefijo de ruta a public_url si quieres que todo esté en una subruta.
     ui_base_path: /_matrix/maubot
-    # The base path for plugin endpoints. The instance ID will be appended directly.
+    # Ruta base para los endpoints de plugins. El ID de instancia se añadirá directamente.
     plugin_base_path: /_matrix/maubot/plugin/
-    # Override path from where to load UI resources.
-    # Set to false to using pkg_resources to find the path.
+    # Ruta alternativa desde donde cargar los recursos de la interfaz de administración.
+    # Establece a false para usar pkg_resources para encontrar la ruta.
     override_resource_path: /opt/maubot/frontend
-    # The shared secret to sign API access tokens.
-    # Set to "generate" to generate and save a new token at startup.
+    # Secreto compartido para firmar los tokens de acceso a la API.
+    # Establece a "generate" para generar y guardar un nuevo token al arrancar.
     unshared_secret: "generate"
 
-# Known homeservers. This is required for the `mbc auth` command and also allows
-# more convenient access from the management UI. This is not required to create
-# clients in the management UI, since you can also just type the homeserver URL
-# into the box there.
+# Servidores Matrix conocidos. Necesario para el comando `mbc auth` y para un acceso
+# más cómodo desde la interfaz de administración. No es obligatorio para crear clientes
+# en la interfaz, ya que también puedes escribir la URL del homeserver directamente.
 homeservers:
     matrix.org:
-    # Client-server API URL
+    # URL de la API cliente-servidor
         url: https://matrix-client.matrix.org
-    # registration_shared_secret from synapse config
+    # registration_shared_secret del config de Synapse
 
-    # You can leave this empty if you don't have access to the homeserver.
+    # Puedes dejarlo vacío si no tienes acceso al homeserver.
 
-    # When this is empty, `mbc auth --register` won't work, but `mbc auth` (login) will.
+    # Si está vacío, `mbc auth --register` no funcionará, pero `mbc auth` (login) sí.
         secret:
+
 admins:
     admin: "${MAUBOT_ADMIN_PASSWORD}"
+
 api_features:
     login: true
     plugin: true
@@ -92,9 +98,9 @@ api_features:
     dev_open: true
     log: true
 
-# Python logging configuration.
+# Configuración de logs de Python.
 #
-# See section 16.7.2 of the Python documentation for more info:
+# Consulta la sección 16.7.2 de la documentación de Python para más información:
 # https://docs.python.org/3.6/library/logging.config.html#configuration-dictionary-schema
 logging:
     version: 1

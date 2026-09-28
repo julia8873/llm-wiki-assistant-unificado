@@ -403,13 +403,15 @@ cmd_up() {
     error "DOMAIN no está configurado en el archivo .env"
   fi
   
-  local maubot_url; maubot_url=$(grep -m 1 '^MAUBOT_URL_BASE=' "${ROOT_DIR}/.env" | cut -d= -f2- | tr -d '\r' || true)
-  if [[ -z "$maubot_url" ]]; then
-    error "MAUBOT_URL_BASE no está configurado en el archivo .env"
+  local maubot_public_url; maubot_public_url=$(grep -m 1 '^MAUBOT_PUBLIC_URL=' "${ROOT_DIR}/.env" | cut -d= -f2- | tr -d '\r' || true)
+  if [[ -z "$maubot_public_url" ]]; then
+    # Fallback a MAUBOT_URL_BASE si MAUBOT_PUBLIC_URL no está definida (compatibilidad hacia atrás)
+    maubot_public_url=$(grep -m 1 '^MAUBOT_URL_BASE=' "${ROOT_DIR}/.env" | cut -d= -f2- | tr -d '\r' || true)
+    warn "MAUBOT_PUBLIC_URL no está en .env, usando MAUBOT_URL_BASE como fallback: ${maubot_public_url}"
   fi
   
   info "Inyectando variables de entorno en estáticos..."
-  sed -i 's|\${MAUBOT_URL_BASE}|'"${maubot_url}"'|g' "${ROOT_DIR}/src/bot/config.yaml" 2>/dev/null || true
+  sed -i 's|\${MAUBOT_PUBLIC_URL}|'"${maubot_public_url}"'|g' "${ROOT_DIR}/src/bot/config.yaml" 2>/dev/null || true
 
   if [[ "$domain" != "localhost" ]]; then
     sed -i 's/\${DOMAIN}/'"${domain}"'/g' "${ROOT_DIR}/src/matrix/element/config.json" 2>/dev/null || true
