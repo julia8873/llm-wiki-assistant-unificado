@@ -65,22 +65,7 @@ Contiene los distintos microservicios:
 
    > **Nota:** Las URLs internas de Element (`config.json`) y Maubot (`config.yaml`) se actualizan automáticamente al ejecutar `./instalar.sh`. No es necesario editarlas a mano.
 
-4. **Propagar la configuración y levantar los servicios:**
-   Ejecuta el script de instalación, que generará secretos, aplicará las variables a los ficheros de configuración y levantará todos los contenedores:
-   ```bash
-   ./instalar.sh
-   ```
-
-5. **Token de acceso Matrix (`MATRIX_ACCESS_TOKEN`):**
-
-   > ✅ **Se obtiene automáticamente.** El script `./instalar.sh` hace login en Synapse con las credenciales de admin (`SYNAPSE_ADMIN_USER` / `SYNAPSE_ADMIN_PASSWORD`) y escribe el token directamente en tu `.env`. No necesitas copiarlo a mano.
-
-   Si por algún motivo necesitas obtenerlo manualmente (p.ej. para una reinstalación parcial):
-   - Abre Element (`http://localhost:8081` o tu `ELEMENT_URL_BASE`), inicia sesión como admin.
-   - Ve a: **Ajustes → Ayuda y sobre** → desplázate al final → **"Token de acceso"** y cópialo en `MATRIX_ACCESS_TOKEN` del `.env`.
-   - Vuelve a ejecutar `./instalar.sh`.
-
-6. **Configurar el Bot (Maubot):**
+4. **Configurar el Bot (Maubot):**
    - Accede a la interfaz de administración de Maubot en `http://localhost:29317/_matrix/maubot/` (o el `MAUBOT_PUBLIC_URL` que hayas configurado). Usuario `admin`, contraseña `MAUBOT_ADMIN_PASSWORD` del `.env`.
    - Sube el plugin del bot (empaquetado como `.mbp`) en la pestaña **Plugins**. El plugin compilado se encuentra en `src/bot/llm-wiki-assistant-plugin/plugin.mbp`.
    - Añade el cliente conectándolo a la URL interna de Synapse (`http://synapse:8008`) usando el usuario `@llm_wiki_bot:<DOMAIN>` (el valor de `MATRIX_BOT_USER` en tu `.env`). El **access token del bot** se puede obtener del `.env` tras ejecutar `./instalar.sh`.
