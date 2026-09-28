@@ -58,38 +58,32 @@ Contiene los distintos microservicios:
    ```
 
 3. **Configurar Variables de Entorno (`.env`) y Configuración Global (`config.yaml`):**
-   - Abre el archivo `.env` recién creado y cambia todas las contraseñas y valores sensibles (marcados como `CHANGE_ME`).
-      - **Importante para GitHub:** El token de acceso personal (PAT) clásico debe tener marcado obligatoriamente el scope completo de **`repo`**. Este token se coloca en la variable `GITHUB_PAT`.
+   - Abre el archivo `.env` recién creado y rellena los valores marcados como `[CAMBIAR]`.
+   - **Token de GitHub:** El PAT clásico de GitHub debe tener el scope **`repo`** completo. Ponlo en `GITHUB_PAT`.
+   - Abre `config/config.yaml` y define tu proveedor Git activo (`git.proveedor_activo`, ej. `github`).
+   - **Si usas proxy inverso:** ajusta `DOMAIN`, `MAUBOT_PUBLIC_URL`, `FRONTEND_URL` y `MOODLE_EXTERNAL_URL` con el hostname público (sin puerto). Consulta los comentarios del `.env` para cada variable.
 
-   - Abre `config/config.yaml` y define tu proveedor Git activo (`git.proveedor_activo`, ej. `github`) y configura sus variables.
+   > **Nota:** Las URLs internas de Element (`config.json`) y Maubot (`config.yaml`) se actualizan automáticamente al ejecutar `./instalar.sh`. No es necesario editarlas a mano.
 
-  Si estás detrás de un proxy inverso, deberás revisar que la URL base de moodle y element corresponde al host:puerto o host/path según tengas configurado tu proxy.
-
-  En Moodle se puede cambiar entrando en el contenedor y modificando la variable CFG->wwwroot dentro de /bitnami/moodel/config.php . En Element hay que cambiar el base_url dentro del archivo src/matrix/element/config.json
-
-4. Propagar los cambios de variables por los archivos de configuración usando el script instalar.sh
-   
-5. **Levantar la Infraestructura:**
-   Ejecuta Docker Compose para construir y levantar todos los microservicios:
+4. **Propagar la configuración y levantar los servicios:**
+   Ejecuta el script de instalación, que generará secretos, aplicará las variables a los ficheros de configuración y levantará todos los contenedores:
    ```bash
-   docker compose up -d --build
-   ```
-6. **Configurar el Token de Matrix:** 
-   - Entra en `http://localhost:8081`.
-   - Inicia sesión con el usuario `admin` y la contraseña de Synapse configurada en tu `.env` (por defecto, `adminpass123_changeme`).
-   - Ve a *Ajustes -> Ayuda e información -> Avanzado* y copia tu **Token de Acceso**.
-   - Pégalo en tu archivo `.env` en la variable `MATRIX_ACCESS_TOKEN`.
-
-7. **Reiniciar Servicios Afectados:** 
-   Como Moodle necesita ese token para su configuración, aplica los cambios reiniciando su contenedor:
-   ```bash
-   docker compose restart moodle
+   ./instalar.sh
    ```
 
-8. **Configurar el Bot (Maubot):**
-   - Accede a la interfaz de administración de Maubot en `http://localhost:29317/_matrix/maubot/` (usuario `admin`, y la contraseña de Maubot configurada en tu `.env`, por defecto `maubotpass_changeme`).
-   - Sube el plugin del bot (empaquetado como `.mbp`) en la pestaña **Plugins**. El plugin compilado debería encontrarse en `src/bot/llm-wiki-assitant-plugin/plugin.mbp`.
-   - Añade el cliente conectándolo a `http://synapse:8008` (usando el usuario `@llm_wiki_bot:localhost`). El **access bot token** se puede obtener al final del `.env` (generado tras ejecutar `./instalar.sh`).
+5. **Token de acceso Matrix (`MATRIX_ACCESS_TOKEN`):**
+
+   > ✅ **Se obtiene automáticamente.** El script `./instalar.sh` hace login en Synapse con las credenciales de admin (`SYNAPSE_ADMIN_USER` / `SYNAPSE_ADMIN_PASSWORD`) y escribe el token directamente en tu `.env`. No necesitas copiarlo a mano.
+
+   Si por algún motivo necesitas obtenerlo manualmente (p.ej. para una reinstalación parcial):
+   - Abre Element (`http://localhost:8081` o tu `ELEMENT_URL_BASE`), inicia sesión como admin.
+   - Ve a: **Ajustes → Ayuda y sobre** → desplázate al final → **"Token de acceso"** y cópialo en `MATRIX_ACCESS_TOKEN` del `.env`.
+   - Vuelve a ejecutar `./instalar.sh`.
+
+6. **Configurar el Bot (Maubot):**
+   - Accede a la interfaz de administración de Maubot en `http://localhost:29317/_matrix/maubot/` (o el `MAUBOT_PUBLIC_URL` que hayas configurado). Usuario `admin`, contraseña `MAUBOT_ADMIN_PASSWORD` del `.env`.
+   - Sube el plugin del bot (empaquetado como `.mbp`) en la pestaña **Plugins**. El plugin compilado se encuentra en `src/bot/llm-wiki-assistant-plugin/plugin.mbp`.
+   - Añade el cliente conectándolo a la URL interna de Synapse (`http://synapse:8008`) usando el usuario `@llm_wiki_bot:<DOMAIN>` (el valor de `MATRIX_BOT_USER` en tu `.env`). El **access token del bot** se puede obtener del `.env` tras ejecutar `./instalar.sh`.
    - Crea la instancia uniendo el Cliente y el Plugin.
 
 ---

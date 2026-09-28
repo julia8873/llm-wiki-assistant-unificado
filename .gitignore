@@ -40,6 +40,9 @@ src/matrix/synapse-data/rest_auth_provider.py
 src/matrix/synapse-data/homeserver.yaml
 src/matrix/synapse-data/homeserver.yaml.tmp
 
+# Generado por instalar.sh desde config.json.template — no versionar
+src/matrix/element/config.json
+
 # Archivos basura del bot
 src/bot/trash/
 src/bot/maubot.db*

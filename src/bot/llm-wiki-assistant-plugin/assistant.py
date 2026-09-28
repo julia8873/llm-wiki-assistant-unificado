@@ -68,11 +68,12 @@ class LLMWikiAssistantPlugin(Plugin):
         pg_pass = os.environ.get("PGVECTOR_PASSWORD")
         pg_db = os.environ.get("PGVECTOR_DB")
         pg_host = os.environ.get("PGVECTOR_HOST")
+        pg_port = os.environ.get("PGVECTOR_PUERTO_CONTENEDOR")
+
+        if not all([pg_user, pg_pass, pg_db, pg_host, pg_port]):
+            raise ValueError("Faltan variables de entorno esenciales para configurar PGVECTOR (USER, PASSWORD, DB, HOST, PUERTO_CONTENEDOR).")
         
-        if not all([pg_user, pg_pass, pg_db, pg_host]):
-            raise ValueError("Faltan variables de entorno esenciales para configurar PGVECTOR (USER, PASSWORD, DB, HOST).")
-        
-        dsn = f"postgresql://{pg_user}:{pg_pass}@{pg_host}:5432/{pg_db}"
+        dsn = f"postgresql://{pg_user}:{pg_pass}@{pg_host}:{pg_port}/{pg_db}"
         self.vector_store = VectorStore(dsn)
         
         try:
