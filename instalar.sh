@@ -410,6 +410,10 @@ cmd_up() {
     warn "MAUBOT_PUBLIC_URL no está en .env, usando MAUBOT_URL_BASE como fallback: ${maubot_public_url}"
   fi
   
+  local maubot_puerto; maubot_puerto=$(grep -m 1 '^MAUBOT_PUERTO_HOST=' "${ROOT_DIR}/.env" | cut -d= -f2- | tr -d '\r' || true)
+  maubot_public_url="${maubot_public_url//\$\{DOMAIN\}/$domain}"
+  maubot_public_url="${maubot_public_url//\$\{MAUBOT_PUERTO_HOST\}/$maubot_puerto}"
+  
   info "Inyectando variables de entorno en estáticos..."
   sed -i 's|\${MAUBOT_PUBLIC_URL}|'"${maubot_public_url}"'|g' "${ROOT_DIR}/src/bot/config.yaml" 2>/dev/null || true
 
