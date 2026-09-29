@@ -378,6 +378,7 @@ services:
       - "${FRONTEND_PUERTO_HOST}:${FRONTEND_PUERTO_CONTENEDOR}"
     environment:
       - VITE_API_TARGET_URL=${VITE_API_TARGET_URL}
+      - PORT=${FRONTEND_PUERTO_CONTENEDOR}
 
 volumes:
   mariadb_data:

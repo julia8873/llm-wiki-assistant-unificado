@@ -9,8 +9,11 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
-      port: 3000,
+      port: parseInt(env.PORT || '3000'),
+      strictPort: true,
       host: true,
+      // Útil cuando se usa un proxy inverso (ej: Ngrok, Traefik, Nginx)
+      ...(env.VITE_HMR_PORT && { hmr: { clientPort: parseInt(env.VITE_HMR_PORT) } }),
       proxy: {
         '/api': {
           // La URL se inyecta desde docker-compose.yml (o .env)
