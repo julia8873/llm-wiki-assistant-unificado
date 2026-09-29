@@ -392,7 +392,9 @@ class LLMWikiAssistantPlugin(Plugin):
                     "tipo_interaccion": tipo_interaccion,
                     "concepto": concepto,
                     "ficheros_consultados": ficheros_consultados,
-                    "git_provider": "github"
+                    "git_provider": "github",
+                    "is_teacher": mapeo_data.get("is_teacher", False),
+                    "moodle_username": mapeo_data.get("moodle_username", "")
                 }
                 
                 log_queue.enqueue(

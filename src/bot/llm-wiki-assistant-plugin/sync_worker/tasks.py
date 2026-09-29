@@ -229,7 +229,15 @@ async def _async_log_interaccion_unificada_task(matrix_room_id: str, repo_alumno
         async with distributed_repo_lock(destino_local):
             await asegurar_repo_local(repo_alumno_url, official_repo_url, destino_local)
             
-            interacciones_dir = os.path.join(destino_local, PATH_LOG_INTERACCIONES)
+            is_teacher = log_data.get("is_teacher", False)
+            username = log_data.get("moodle_username", "")
+            
+            if is_teacher and username:
+                base_path = os.path.join("profesores", username, PATH_LOG_INTERACCIONES)
+            else:
+                base_path = PATH_LOG_INTERACCIONES
+
+            interacciones_dir = os.path.join(destino_local, base_path)
             os.makedirs(interacciones_dir, exist_ok=True)
             
             # Formato de archivo: logs/interacciones/YYYY-MM-DD.jsonl
@@ -241,7 +249,7 @@ async def _async_log_interaccion_unificada_task(matrix_room_id: str, repo_alumno
             except Exception:
                 fecha = datetime.datetime.utcnow().strftime("%Y-%m-%d")
 
-            log_path = os.path.join(destino_local, PATH_LOG_INTERACCIONES, f"{fecha}.jsonl")
+            log_path = os.path.join(destino_local, base_path, f"{fecha}.jsonl")
             
             # --- PII Guard Integration ---
             
@@ -293,7 +301,7 @@ async def _async_log_interaccion_unificada_task(matrix_room_id: str, repo_alumno
                 with open(log_path, "a", encoding="utf-8") as f:
                     f.write(line_str + "\n")
                 
-                await run_git_command('add', f'{PATH_LOG_INTERACCIONES}/{fecha}.jsonl', cwd=destino_local)
+                await run_git_command('add', f'{base_path}/{fecha}.jsonl', cwd=destino_local)
                 code, out, err = await run_git_command('commit', '-m', f'{COMMIT_MSG_LOG} {iso_timestamp}', cwd=destino_local)
                 if code != 0:
                     logger.warning(f"Git commit omitido (sin cambios): {err}")
