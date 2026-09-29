@@ -134,7 +134,7 @@ if ($lock) {
         $lock->release();
         
         // Redirigir
-        $element_url = getenv('ELEMENT_URL_BASE') ?: 'http://' . $domain . ':8081';
+        $element_url = getenv('ELEMENT_URL_BASE') ?: 'http://' . $domain . '/element';
         redirect($element_url . '/#/room/' . urlencode($room_id));
         
     } catch (\Exception $e) {
