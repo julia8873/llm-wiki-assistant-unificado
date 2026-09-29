@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
-      port: parseInt(env.PORT || '3000'),
+      port: parseInt(env.PORT),
       strictPort: true,
       host: true,
       // Útil cuando se usa un proxy inverso (ej: Ngrok, Traefik, Nginx)
