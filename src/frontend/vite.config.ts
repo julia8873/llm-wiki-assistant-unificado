@@ -12,6 +12,7 @@ export default defineConfig(({ mode }) => {
       port: parseInt(env.PORT),
       strictPort: true,
       host: true,
+      allowedHosts: env.VITE_ALLOWED_HOSTS ? env.VITE_ALLOWED_HOSTS.split(',') : [],
       // Útil cuando se usa un proxy inverso (ej: Ngrok, Traefik, Nginx)
       ...(env.VITE_HMR_PORT && { hmr: { clientPort: parseInt(env.VITE_HMR_PORT) } }),
       proxy: {

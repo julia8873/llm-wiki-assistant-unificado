@@ -62,6 +62,7 @@ Contiene los distintos microservicios:
    - **Token de GitHub:** El PAT clásico de GitHub debe tener el scope **`repo`** completo. Ponlo en `GITHUB_PAT`.
    - Abre `config/config.yaml` y define tu proveedor Git activo (`git.proveedor_activo`, ej. `github`).
    - **Si usas proxy inverso:** ajusta `DOMAIN`, `MAUBOT_PUBLIC_URL`, `FRONTEND_URL` y `MOODLE_EXTERNAL_URL` con el hostname público (sin puerto). Consulta los comentarios del `.env` para cada variable.
+   - **Frontend de Trazabilidad (Vite):** Si expones el panel de trazabilidad usando subdominios (ej: `trazabilidad.midominio.com`), añádelos en la variable `VITE_ALLOWED_HOSTS` (separados por comas) dentro del `.env` para que Vite acepte las conexiones. Además, si el proxy usa un puerto distinto al del contenedor (ej: 80 o 443), descomenta y ajusta `VITE_HMR_PORT`.
 
    > **Nota:** Las URLs internas de Element (`config.json`) y Maubot (`config.yaml`) se actualizan automáticamente al ejecutar `./instalar.sh`. No es necesario editarlas a mano.
 
