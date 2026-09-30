@@ -217,7 +217,7 @@ class RepoReader:
         # 4. Extraer conceptos usando el LLM y evaluar la calidad de la extracción
         prompt_conceptos = (
             "Analiza el siguiente texto extraído de un documento. Si notas que el texto es ilegible, es ruido, tiene muchísimos caracteres extraños o no tiene sentido (indicando una mala extracción), "
-            "DEBES rechazarlo devolviendo EXCLUSIVAMENTE este JSON: {\"error\": \"mala_extraccion\"}.\n\n"
+            "DEBES rechazarlo devolviendo EXCLUSIVAMENTE: <error>mala_extraccion</error>.\n\n"
             "Si el texto es legible, debes ejecutar la operación 'INGEST' sobre él, basándote exactamente en la documentación de AGENTS.md proporcionada.\n\n"
             "NO DEVUELVAS JSON. Devuelve tu respuesta EXCLUSIVAMENTE utilizando estas etiquetas XML para estructurar los ficheros que vas a crear:\n\n"
             "<file path=\"ruta/indicada/en/AGENTS.md/archivo.md\">\n"
@@ -229,7 +229,7 @@ class RepoReader:
             "\n"
             "Contenido del documento...\n"
             "</file>\n\n"
-            "Si el texto es basura (ruido/mala extracción), simplemente devuelve <error>mala_extraccion</error>.\n\n"
+            "Si el texto es basura (ruido/mala extracción), repito: simplemente devuelve <error>mala_extraccion</error>.\n\n"
             f"--- TEXTO EXTRAIDO DEL DOCUMENTO ---\n{extracted_text}"
         )
         
@@ -237,7 +237,7 @@ class RepoReader:
         if agents_content:
             system_prompt += f"--- REGLAS OKF (AGENTS.md) ---\n{agents_content}\n"
             
-        respuesta_llm = await self.llm_client.get_response(system_prompt, prompt_conceptos, max_tokens_override=8192, response_format="json")
+        respuesta_llm = await self.llm_client.get_response(system_prompt, prompt_conceptos, max_tokens_override=8192)
         
         # Comprobar si la IA determinó que la extracción era mala
         if "<error>mala_extraccion</error>" in respuesta_llm:

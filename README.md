@@ -61,8 +61,18 @@ Contiene los distintos microservicios:
    - Abre el archivo `.env` recién creado y rellena los valores marcados como `[CAMBIAR]`.
    - **Token de GitHub:** El PAT clásico de GitHub debe tener el scope **`repo`** completo. Ponlo en `GITHUB_PAT`.
    - Abre `config/config.yaml` y define tu proveedor Git activo (`git.proveedor_activo`, ej. `github`).
-   - **Si usas proxy inverso:** ajusta `DOMAIN`, `MAUBOT_PUBLIC_URL`, `FRONTEND_URL` y `MOODLE_EXTERNAL_URL` con el hostname público (sin puerto). Consulta los comentarios del `.env` para cada variable.
-   - **Frontend de Trazabilidad (Vite):** Si expones el panel de trazabilidad usando subdominios (ej: `trazabilidad.midominio.com`), añádelos en la variable `VITE_ALLOWED_HOSTS` (separados por comas) dentro del `.env` para que Vite acepte las conexiones. Además, si el proxy usa un puerto distinto al del contenedor (ej: 80 o 443), descomenta y ajusta `VITE_HMR_PORT`.
+   
+   #### Configuración para Proxy Inverso (Producción)
+   Variables a cambiar si se usa proxy inverso:
+
+   * **`DOMAIN`**: Tu dominio base (ej. `mi-dominio.com`).
+   * **`MOODLE_REVERSEPROXY_ENABLED`**: Cámbialo a `yes` para que Moodle sepa que está detrás de un proxy y genere bien las redirecciones.
+   * **`MOODLE_EXTERNAL_URL`**: La URL pública de Moodle. Ej: `https://${DOMAIN}` (sin puerto).
+   * **`ELEMENT_URL_BASE`**: La ruta pública donde vas a servir el cliente de chat Element. Ej: `https://${DOMAIN}/element` o `https://element.${DOMAIN}`.
+   * **`MAUBOT_PUBLIC_URL`**: La URL pública para el panel web del bot. Ej: `https://${DOMAIN}/maubot` o `https://maubot.${DOMAIN}`.
+   * **`FRONTEND_URL`**: La URL pública del dashboard de métricas de trazabilidad. Ej: `https://${DOMAIN}/trazabilidad` o `https://trazabilidad.${DOMAIN}`.
+   * **`VITE_ALLOWED_HOSTS`**: Si el dashboard (Frontend) se sirve bajo un nombre de dominio concreto, añádelo aquí (ej. `trazabilidad.mi-dominio.com`) para que el servidor permita la conexión.
+   * **`VITE_HMR_PORT`**: Descomenta y ajusta esta variable si usas Vite con un puerto público diferente al interno (ej. `443` para HTTPS).
 
    > **Nota:** Las URLs internas de Element (`config.json`) y Maubot (`config.yaml`) se actualizan automáticamente al ejecutar `./instalar.sh`. No es necesario editarlas a mano.
 
