@@ -252,8 +252,9 @@ class RepoReader:
         file_matches = re.findall(r'<file\s+path=["\']([^"\']+)["\']>\s*(.*?)\s*</file>', respuesta_llm, flags=re.DOTALL | re.IGNORECASE)
         
         if not file_matches:
-            logger.error(f"El LLM no devolvió ninguna etiqueta <file>: {respuesta_llm}")
-            raise RepoReaderError("El LLM no devolvió ningún archivo formateado correctamente en etiquetas XML.")
+            error_msg = f"El LLM no devolvió ningún archivo formateado correctamente en etiquetas XML.\n\nRespuesta del LLM:\n{respuesta_llm}"
+            logger.error(error_msg)
+            raise RepoReaderError(error_msg)
             
         # 5. Crear los ficheros Markdown en sus respectivas carpetas
         archivos_creados = []

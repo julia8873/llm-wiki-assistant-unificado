@@ -508,22 +508,26 @@ EOF
       while true; do
         local s_status=$(docker inspect --format="{{if .State.Health}}{{.State.Health.Status}}{{end}}" "$synapse_container" 2>/dev/null || echo "starting")
         if [[ "$s_status" == "healthy" ]]; then
-          setup_synapse_admin
-          setup_bot_token
-          # Recrear Moodle para que cargue el MATRIX_ACCESS_TOKEN actualizado en .env
-          local moodle_container; moodle_container=$(grep -m 1 MOODLE_NOMBRE_CONTENEDOR .env | cut -d= -f2 | tr -d '\r' || echo "moodle-matrix-dev-moodle-1")
-          info "Reiniciando Moodle para cargar el nuevo MATRIX_ACCESS_TOKEN..."
-          unset MATRIX_ACCESS_TOKEN BOT_ACCESS_TOKEN
-          docker compose up -d --force-recreate --no-deps moodle >/dev/null 2>&1 || true
-          # Esperar a que Moodle vuelva a estar healthy
-          sleep 10
-          while true; do
-            local m2_status=$(docker inspect --format="{{if .State.Health}}{{.State.Health.Status}}{{end}}" "$moodle_container" 2>/dev/null || echo "starting")
-            if [[ "$m2_status" == "healthy" ]]; then
-              break
-            fi
-            sleep 5
-          done
+          if grep -q '^MATRIX_ACCESS_TOKEN=.\+' .env && grep -q '^BOT_ACCESS_TOKEN=.\+' .env; then
+            info "Tokens de Matrix ya existentes, omitiendo regeneración y reinicio de Moodle."
+          else
+            setup_synapse_admin
+            setup_bot_token
+            # Recrear Moodle para que cargue el MATRIX_ACCESS_TOKEN actualizado en .env
+            local moodle_container; moodle_container=$(grep -m 1 MOODLE_NOMBRE_CONTENEDOR .env | cut -d= -f2 | tr -d '\r' || echo "moodle-matrix-dev-moodle-1")
+            info "Reiniciando Moodle para cargar el nuevo MATRIX_ACCESS_TOKEN..."
+            unset MATRIX_ACCESS_TOKEN BOT_ACCESS_TOKEN
+            docker compose up -d --force-recreate --no-deps moodle >/dev/null 2>&1 || true
+            # Esperar a que Moodle vuelva a estar healthy
+            sleep 10
+            while true; do
+              local m2_status=$(docker inspect --format="{{if .State.Health}}{{.State.Health.Status}}{{end}}" "$moodle_container" 2>/dev/null || echo "starting")
+              if [[ "$m2_status" == "healthy" ]]; then
+                break
+              fi
+              sleep 5
+            done
+          fi
           info "Ejecutando upgrade de plugins de Moodle para registrar observadores de eventos..."
           docker exec -u daemon "$moodle_container" php /opt/bitnami/moodle/admin/cli/upgrade.php --non-interactive 2>/dev/null || true
           docker exec -u daemon "$moodle_container" php /opt/bitnami/moodle/admin/cli/purge_caches.php 2>/dev/null || true
@@ -595,14 +599,10 @@ cmd_bot() {
   case "$submode" in
     package)
       local plugin_path="${ROOT_DIR}/src/bot/llm-wiki-assistant-plugin/plugin.mbp"
-      if [[ -f "$plugin_path" ]]; then
-        info "El plugin de Maubot ya está empaquetado (plugin.mbp existe). Omitiendo..."
-      else
-        info "Empaquetando el plugin de Maubot (Fase 5)..."
-        check_docker
-        docker run --rm -v "${ROOT_DIR}/src/bot/llm-wiki-assistant-plugin:/plugin" alpine sh -c "apk add --no-cache zip && cd /plugin && zip -r plugin.mbp . -x '*/__pycache__/*' -x '*.pyc'"
-        ok "Plugin empaquetado exitosamente en src/bot/llm-wiki-assistant-plugin/plugin.mbp"
-      fi
+      info "Empaquetando el plugin de Maubot (Fase 5)..."
+      check_docker
+      docker run --rm -v "${ROOT_DIR}/src/bot/llm-wiki-assistant-plugin:/plugin" alpine sh -c "apk add --no-cache zip && cd /plugin && zip -r plugin.mbp . -x '*/__pycache__/*' -x '*.pyc'"
+      ok "Plugin empaquetado exitosamente en src/bot/llm-wiki-assistant-plugin/plugin.mbp"
       ;;
     sync)
       error "Comando 'bot sync' pendiente (Fase 3)."
