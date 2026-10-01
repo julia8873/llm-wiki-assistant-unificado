@@ -160,19 +160,9 @@ class LLMWikiAssistantPlugin(Plugin):
                     mapeo_data = await self.mapeo_client.get_room_mapping(room_id)
                     data = await self.client.download_media(file_info["url"])
                     
-                    await self.repo_reader.ingest_file_okf(
-                        data, 
-                        file_info["filename"], 
-                        mapeo_data,
-                        with_ocr=use_ocr
-                    )
-                    
-                    # Re-indexar el repo ahora que tiene los nuevos conceptos .md
-                    await self.repo_reader.process_repository(mapeo_data)
-                    
-                    await evt.respond(f"¡Listo! El archivo ha sido analizado y sus conceptos han sido extraídos mediante {'OCR Multimodal' if use_ocr else 'Extracción Normal'} y guardados correctamente en tu repositorio. Ya puedes preguntarme sobre ellos.")
+                    await self._execute_ingest(evt, mapeo_data, data, file_info["filename"], use_ocr)
                 except Exception as e:
-                    self.log.error(f"Error procesando archivo {file_info['filename']}: {e}")
+                    self.log.error(f"Error en el flujo de archivo subido {file_info['filename']}: {e}")
                     await evt.respond(f"Ha ocurrido un error al procesar el archivo. Detalles: {e}")
             elif lower_q in ["no", "cancelar"]:
                 self.pending_files.pop(evt.sender)
@@ -187,6 +177,7 @@ class LLMWikiAssistantPlugin(Plugin):
                 "### 🛠️ Comandos Disponibles\n\n"
                 "- **`!ayuda`** / **`!comandos`**: Muestra este menú de ayuda.\n"
                 "- **`!deshacer`** / **`!revertir`**: Revierte la última ingesta automática de un documento (elimina sus conceptos y olvida la información).\n"
+                "- **`!ingestar <archivo>`**: Procesa un archivo que hayas subido manualmente a la carpeta `raw` de tu repositorio (ej: `!ingestar tema1.pdf`). Añade `ocr` al final si quieres usar IA Visual.\n"
                 "- **`!sincronizar`**: Sincroniza tu repositorio con los últimos materiales oficiales de la asignatura.\n"
                 "- **`!repo`**: Muestra el enlace del repositorio GitHub/GitLab que está conectado a esta sala.\n"
                 "- **`!modo oficial` / `!modo carpeta`** *(solo profesores)*: Cambia si la IA busca respuestas en todo el repositorio oficial o solo en tu carpeta personal.\n\n"
@@ -257,6 +248,53 @@ class LLMWikiAssistantPlugin(Plugin):
             except Exception as e:
                 self.log.error(f"Error al sincronizar manualmente: {e}")
                 await evt.respond(f"❌ Ocurrió un error durante la sincronización: {e}")
+            return
+            
+        if lower_q.startswith("!ingestar"):
+            parts = query.split(maxsplit=1)
+            if len(parts) < 2:
+                await evt.respond("Por favor, especifica el nombre del archivo. Ejemplo: `!ingestar apuntes.pdf`")
+                return
+            
+            filename = parts[1].strip()
+            use_ocr = False
+            if filename.lower().endswith(" ocr"):
+                use_ocr = True
+                filename = filename[:-4].strip()
+                
+            await evt.respond(f"Buscando '{filename}' en la carpeta raw de tu repositorio y procesándolo...")
+            
+            try:
+                import urllib.parse
+                mapeo_data = await self.mapeo_client.get_room_mapping(room_id)
+                repo_url = mapeo_data.get('repo_url')
+                official_repo_url = mapeo_data.get('official_repo_url')
+                is_teacher = mapeo_data.get("is_teacher", False)
+                moodle_username = mapeo_data.get("moodle_username", "unknown")
+                
+                # Asegurar repo actualizado
+                from mixins.git_utils import asegurar_repo_local
+                safe_name = urllib.parse.quote_plus(repo_url)
+                local_path = os.path.join(self.repo_reader.repos_dir, safe_name)
+                await asegurar_repo_local(repo_url, official_repo_url, local_path)
+                
+                base_dir = f"profesores/{moodle_username}" if is_teacher else "."
+                file_path = os.path.join(local_path, base_dir, "raw", filename)
+                
+                if not os.path.exists(file_path):
+                    await evt.respond(f"❌ No se encontró el archivo '{filename}' en la carpeta 'raw'. Asegúrate de haber hecho push a tu repositorio.")
+                    return
+                
+                with open(file_path, "rb") as f:
+                    file_bytes = f.read()
+                    
+                await evt.respond(f"Archivo encontrado. Procesando documento... (esto puede tardar un poco mientras la IA extrae los conceptos y se guardan en GitHub).")
+                
+                await self._execute_ingest(evt, mapeo_data, file_bytes, filename, use_ocr)
+                
+            except Exception as e:
+                self.log.error(f"Error procesando comando !ingestar para {filename}: {e}")
+                await evt.respond(f"❌ Ocurrió un error al procesar el archivo: {e}")
             return
             
         self.log.info(f"Mensaje procesado: '{query}' de {evt.sender} en {room_id}")
@@ -426,3 +464,24 @@ class LLMWikiAssistantPlugin(Plugin):
         except Exception as e:
             self.log.error(f"Error inesperado procesando mensaje: {e}", exc_info=True)
             await evt.respond(f"Ha ocurrido un error interno. Detalles: {str(e)}")
+
+    async def _execute_ingest(self, evt, mapeo_data, file_bytes, filename, use_ocr):
+        """!
+        @brief Método auxiliar para no repetir código entre subida directa a Matrix y comando !ingestar.
+        """
+        try:
+            await self.repo_reader.ingest_file_okf(
+                file_bytes, 
+                filename, 
+                mapeo_data,
+                with_ocr=use_ocr
+            )
+            
+            # Re-indexar el repo ahora que tiene los nuevos conceptos .md
+            await self.repo_reader.process_repository(mapeo_data)
+            
+            await evt.respond(f"✅ ¡Listo! El archivo '{filename}' ha sido analizado mediante {'OCR Multimodal' if use_ocr else 'Extracción Normal'}. Sus conceptos han sido extraídos y guardados correctamente en tu repositorio. Ya puedes preguntarme sobre ellos.")
+        except Exception as e:
+            self.log.error(f"Error dentro de _execute_ingest para {filename}: {e}")
+            await evt.respond(f"❌ Ha ocurrido un error en el proceso de ingesta. Detalles: {e}")
+
