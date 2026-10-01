@@ -341,32 +341,33 @@ setup_bot_token() {
   [[ -z "$bot_username" ]] && error "MATRIX_BOT_USER no está definido en .env"
 
   local synapse_url="http://127.0.0.1:${synapse_port}"
-  local bot_token; bot_token=$(grep -E "^BOT_ACCESS_TOKEN=" "$root_env" | cut -d= -f2- || true)
   
-  if [[ -z "$bot_token" ]]; then
-    info "Generando Access Token para el bot (${bot_username})..."
-    local bot_pass; bot_pass=$(grep -m 1 "^SYNAPSE_ADMIN_PASSWORD=" "$root_env" | cut -d= -f2- | tr -d '\r')
-    [[ -z "$bot_pass" ]] && error "SYNAPSE_ADMIN_PASSWORD no está definido en .env"
+  info "Generando/verificando Access Token para el bot (${bot_username})..."
+  local bot_pass; bot_pass=$(grep -m 1 "^SYNAPSE_ADMIN_PASSWORD=" "$root_env" | cut -d= -f2- | tr -d '\r')
+  [[ -z "$bot_pass" ]] && error "SYNAPSE_ADMIN_PASSWORD no está definido en .env"
 
-    # 1. Registrar usuario bot
-    docker exec "$synapse_container" \
-      register_new_matrix_user -c /data/homeserver.yaml --no-admin \
-      -u "$bot_username" -p "$bot_pass" "${synapse_url}" 2>/dev/null || true
+  # 1. Registrar usuario bot (si no existe, fallará silenciosamente lo cual está bien)
+  docker exec "$synapse_container" \
+    register_new_matrix_user -c /data/homeserver.yaml --no-admin \
+    -u "$bot_username" -p "$bot_pass" "${synapse_url}" 2>/dev/null || true
 
-    # 2. Hacer login para obtener token
-    local login_resp
-    login_resp=$(curl -sf -X POST "${synapse_url}/_matrix/client/v3/login" \
-      -H 'Content-Type: application/json' \
-      -d "{\"type\":\"m.login.password\",\"user\":\"${bot_username}\",\"password\":\"${bot_pass}\"}" 2>/dev/null || echo '')
-      
-    bot_token=$(echo "$login_resp" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4 || true)
+  # 2. Hacer login para obtener un token fresco
+  local login_resp
+  login_resp=$(curl -sf -X POST "${synapse_url}/_matrix/client/v3/login" \
+    -H 'Content-Type: application/json' \
+    -d "{\"type\":\"m.login.password\",\"user\":\"${bot_username}\",\"password\":\"${bot_pass}\"}" 2>/dev/null || echo '')
     
-    if [[ -n "$bot_token" ]]; then
-      echo "BOT_ACCESS_TOKEN=${bot_token}" >> "$root_env"
-      ok "Access Token del bot generado exitosamente."
+  local bot_token; bot_token=$(echo "$login_resp" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4 || true)
+  
+  if [[ -n "$bot_token" ]]; then
+    if grep -q '^BOT_ACCESS_TOKEN=' "$root_env"; then
+      sed -i "s|^BOT_ACCESS_TOKEN=.*|BOT_ACCESS_TOKEN=${bot_token}|" "$root_env"
     else
-      warn "No se pudo generar el Access Token para el bot."
+      echo "BOT_ACCESS_TOKEN=${bot_token}" >> "$root_env"
     fi
+    ok "Access Token del bot generado y guardado exitosamente."
+  else
+    warn "No se pudo generar el Access Token para el bot. Revisa los logs de Synapse."
   fi
 }
 
