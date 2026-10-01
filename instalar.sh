@@ -431,6 +431,10 @@ cmd_up() {
   cp -f "src/matrix/synapse-custom/rest_auth_provider.py" \
         "src/matrix/synapse-data/rest_auth_provider.py"
 
+  info "Ajustando permisos de synapse-data para el contenedor..."
+  docker run --rm -v "${ROOT_DIR}/src/matrix/synapse-data:/data" alpine chown -R 991:991 /data || true
+
+
   # Sustituir variables de entorno en homeserver.yaml (plantilla con ${VAR}).
   # Las versiones recientes de Synapse requieren homeserver.yaml con valores literales.
   info "Aplicando variables de entorno a homeserver.yaml..."

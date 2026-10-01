@@ -100,3 +100,15 @@ La documentación se puede generar con el siguiente comando:
 ```bash
 ./instalar.sh docs serve
 ```
+
+---
+
+## Resolución de Problemas
+
+### Synapse no inicia por falta de permisos
+Si el contenedor de Matrix (`synapse`) se reinicia o falla al intentar escribir en su base de datos local y/o subir archivos, es probable que no tenga permisos sobre la carpeta montada como volumen.
+
+Se le puede dar permisos al usuario de Synapse (cuyo UID es `991`) en el directorio `synapse-data`:
+```bash
+sudo chown -R 991:991 ./src/matrix/synapse-data
+```
