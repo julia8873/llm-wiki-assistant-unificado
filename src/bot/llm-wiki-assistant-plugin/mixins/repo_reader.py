@@ -240,7 +240,7 @@ class RepoReader:
         respuesta_llm = await self.llm_client.get_response(system_prompt, prompt_conceptos, max_tokens_override=8192)
         
         # Comprobar si la IA determinó que la extracción era mala
-        if "<error>mala_extraccion</error>" in respuesta_llm:
+        if "<error>mala_extraccion</error>" in respuesta_llm or "mala_extraccion" in respuesta_llm:
             raise RepoReaderError(
                 "La extracción de texto ha fallado o el contenido es ilegible. "
                 "No se subirá nada al repositorio para evitar ensuciarlo con datos erróneos. "
