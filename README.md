@@ -111,14 +111,14 @@ El bot de Matrix ofrece varios comandos para interactuar con tu base de conocimi
 Hay dos formas de proporcionar apuntes al bot para que extraiga sus conceptos usando Inteligencia Artificial:
 
 1. **Subida por chat (Recomendado):**
-   Arrastra y suelta tu archivo PDF o documento de texto en la ventana del chat. El bot lo detectará automáticamente y te preguntará si quieres procesarlo (respondiendo `si` o `ocr`). Él mismo se encargará de subir los conceptos procesados a tu repositorio.
+   Arrastra y suelta tu archivo PDF o documento de texto en la ventana del chat. El bot lo detectará automáticamente y te preguntará si quieres procesarlo (respondiendo `si` o `ocr`). Se hará también el proceso de extracción.
 
 2. **Subida manual por Git (`!ingestar`):**
    Si prefieres subir los archivos manualmente a tu repositorio, puedes hacer un commit de tu documento dentro de la carpeta `raw/`. Tras hacer el push, ve al chat de Matrix y escribe:
    ```text
    !ingestar nombre_del_archivo.pdf
    ```
-   El bot descargará el documento directamente desde GitHub y comenzará el proceso de extracción, actualizando el repositorio con los nuevos conceptos extraídos. Añade la palabra `ocr` al final si el documento contiene imágenes o escaneos.
+   El bot descargará el documento directamente desde GitHub y comenzará el proceso de extracción. Añade la palabra `ocr` al final si el documento contiene imágenes o escaneos.
 
 ---
 
