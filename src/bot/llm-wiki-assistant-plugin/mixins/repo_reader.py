@@ -239,9 +239,11 @@ class RepoReader:
             
         respuesta_llm = await self.llm_client.get_response(system_prompt, prompt_conceptos, max_tokens_override=8192)
         
-        # DEBUG:
-        print(f"=== DEBUG LLM RESPUESTA ===\n{respuesta_llm}\n===========================", flush=True)
-        logger.info(f"=== Respuesta cruda del LLM ===\n{respuesta_llm}\n===============================")
+        # Guardar en archivo porque maubot trunca los logs multilínea
+        debug_file_path = "/tmp/llm_wiki_repos/ultimo_debug_llm.txt"
+        with open(debug_file_path, "w", encoding="utf-8") as f_debug:
+            f_debug.write(f"=== Respuesta cruda del LLM ===\n{respuesta_llm}\n")
+        logger.info(f"Respuesta del LLM guardada en {debug_file_path} (Longitud: {len(respuesta_llm)} caracteres)")
         
         # Comprobar si la IA determinó que la extracción era mala
         respuesta_lower = respuesta_llm.lower()
@@ -318,6 +320,8 @@ class RepoReader:
         except Exception as e:
             if "nothing to commit" not in str(e).lower():
                 raise
+                
+        return respuesta_llm
 
     async def revert_last_ingest(self, mapeo_data: Dict[str, Any]) -> bool:
         """! 
