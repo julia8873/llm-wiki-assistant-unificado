@@ -217,9 +217,9 @@ class RepoReader:
         # 4. Extraer conceptos usando el LLM y evaluar la calidad de la extracción
         prompt_conceptos = (
             "Analiza el siguiente texto extraído de un documento. Si notas que el texto es ilegible, es ruido, tiene muchísimos caracteres extraños o no tiene sentido (indicando una mala extracción), "
-            "DEBES rechazarlo devolviendo EXCLUSIVAMENTE: <error>mala_extraccion</error>.\n\n"
+            "DEBES rechazarlo devolviendo EXCLUSIVAMENTE la cadena exacta <error>mala_extraccion</error>.\n\n"
             "Si el texto es legible, debes ejecutar la operación 'INGEST' sobre él, basándote exactamente en la documentación de AGENTS.md proporcionada.\n\n"
-            "NO DEVUELVAS JSON. Devuelve tu respuesta EXCLUSIVAMENTE utilizando estas etiquetas XML para estructurar los ficheros que vas a crear:\n\n"
+            "MUY IMPORTANTE: NO DEVUELVAS JSON BAJO NINGUNA CIRCUNSTANCIA. Devuelve tu respuesta EXCLUSIVAMENTE utilizando estas etiquetas XML para estructurar los ficheros que vas a crear:\n\n"
             "<file path=\"ruta/indicada/en/AGENTS.md/archivo.md\">\n"
             "---\n"
             "type: ...\n"
@@ -239,8 +239,13 @@ class RepoReader:
             
         respuesta_llm = await self.llm_client.get_response(system_prompt, prompt_conceptos, max_tokens_override=8192)
         
+        # DEBUG:
+        print(f"=== DEBUG LLM RESPUESTA ===\n{respuesta_llm}\n===========================")
+        logger.debug(f"Respuesta del LLM: {respuesta_llm}")
+        
         # Comprobar si la IA determinó que la extracción era mala
-        if "<error>mala_extraccion</error>" in respuesta_llm or "mala_extraccion" in respuesta_llm:
+        respuesta_lower = respuesta_llm.lower()
+        if "<error>mala_extraccion</error>" in respuesta_lower or "mala_extracc" in respuesta_lower:
             raise RepoReaderError(
                 "La extracción de texto ha fallado o el contenido es ilegible. "
                 "No se subirá nada al repositorio para evitar ensuciarlo con datos erróneos. "

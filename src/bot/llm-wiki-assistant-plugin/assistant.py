@@ -340,10 +340,11 @@ class LLMWikiAssistantPlugin(Plugin):
                 "3. 'concepto': Lista de conceptos tocados. Si 'tipo_interaccion' es 'fuera_de_ambito', esta lista DEBE ser obligatoriamente vacía [].\n\n"
                 "REGLA DE FORMATO PARA CITAS:\n"
                 "1. NUNCA agrupes toda tu explicación en un solo párrafo. Sepárala en MÚLTIPLES PÁRRAFOS.\n"
-                "2. Al final de CADA párrafo individual, DEBES incluir EXCLUSIVAMENTE los enlaces a los ficheros citados en ese párrafo.\n"
-                "3. Formatea las citas siempre como una lista Markdown con un guion (cada enlace en una nueva línea) apuntando al repositorio en GitHub.\n"
-                f"Ejemplo:\n"
-                f"Este es un párrafo de tu explicación.\n"
+                "2. Al final de tu respuesta (solo una vez al final), añade una lista con los enlaces a los ficheros que has utilizado como fuente.\n"
+                "3. NO dupliques enlaces. Cada fichero debe aparecer solo una vez en toda tu respuesta.\n"
+                "4. Formatea las citas como una lista Markdown con un guion apuntando al repositorio en GitHub.\n"
+                f"Ejemplo al final de tu respuesta:\n"
+                f"Fuentes:\n"
                 f"- [ruta/al/fichero1.md]({web_repo_url}/blob/main/ruta/al/fichero1.md)\n\n"
             )
             
