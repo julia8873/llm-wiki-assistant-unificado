@@ -240,8 +240,8 @@ class RepoReader:
         respuesta_llm = await self.llm_client.get_response(system_prompt, prompt_conceptos, max_tokens_override=8192)
         
         # DEBUG:
-        print(f"=== DEBUG LLM RESPUESTA ===\n{respuesta_llm}\n===========================")
-        logger.debug(f"Respuesta del LLM: {respuesta_llm}")
+        print(f"=== DEBUG LLM RESPUESTA ===\n{respuesta_llm}\n===========================", flush=True)
+        logger.info(f"=== Respuesta cruda del LLM ===\n{respuesta_llm}\n===============================")
         
         # Comprobar si la IA determinó que la extracción era mala
         respuesta_lower = respuesta_llm.lower()
