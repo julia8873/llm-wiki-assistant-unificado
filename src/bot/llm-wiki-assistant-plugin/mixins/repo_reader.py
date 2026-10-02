@@ -250,6 +250,7 @@ class RepoReader:
                 "La extracción de texto ha fallado o el contenido es ilegible. "
                 "No se subirá nada al repositorio para evitar ensuciarlo con datos erróneos. "
                 "Te recomiendo que lo intentes de nuevo utilizando la opción 'ocr'."
+                f"\n\n**DEBUG (Lo que devolvió el LLM):**\n```\n{respuesta_llm}\n```"
             )
             
         # Parsear las etiquetas XML <file path="...">...</file>
