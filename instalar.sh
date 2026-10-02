@@ -447,14 +447,14 @@ cmd_up() {
   set +a
   envsubst < "src/matrix/synapse-data/homeserver.yaml.example" \
             > "src/matrix/synapse-data/homeserver.yaml.tmp" && \
-    mv "src/matrix/synapse-data/homeserver.yaml.tmp" \
+    mv -f "src/matrix/synapse-data/homeserver.yaml.tmp" \
        "src/matrix/synapse-data/homeserver.yaml"
   ok "homeserver.yaml configurado."
 
   info "Generando Element config.json desde la plantilla..."
   envsubst < "src/matrix/element/config.json.template" \
             > "src/matrix/element/config.json.tmp" && \
-    mv "src/matrix/element/config.json.tmp" \
+    mv -f "src/matrix/element/config.json.tmp" \
        "src/matrix/element/config.json"
   ok "Element config.json generado."
 

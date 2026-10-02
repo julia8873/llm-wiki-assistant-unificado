@@ -484,7 +484,6 @@ class LLMWikiAssistantPlugin(Plugin):
             await evt.respond(f"✅ ¡Listo! El archivo '{filename}' ha sido analizado mediante {'OCR Multimodal' if use_ocr else 'Extracción Normal'}. Sus conceptos han sido extraídos y guardados correctamente en tu repositorio. Ya puedes preguntarme sobre ellos.")
             await evt.respond(f"**Respuesta cruda del LLM:**\n```\n{respuesta_llm}\n```")
         except Exception as e:
-            await evt.respond(f"**Respuesta cruda del LLM:**\n```\n{respuesta_llm}\n```")
             self.log.error(f"Error dentro de _execute_ingest para {filename}: {e}")
             await evt.respond(f"❌ Ha ocurrido un error en el proceso de ingesta. Detalles:\n{e}")
 
