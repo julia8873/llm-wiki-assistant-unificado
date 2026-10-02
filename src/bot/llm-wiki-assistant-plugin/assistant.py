@@ -485,5 +485,5 @@ class LLMWikiAssistantPlugin(Plugin):
             await evt.respond(f"**Respuesta cruda del LLM:**\n```\n{respuesta_llm}\n```")
         except Exception as e:
             self.log.error(f"Error dentro de _execute_ingest para {filename}: {e}")
-            await evt.respond(f"❌ Ha ocurrido un error en el proceso de ingesta. Detalles:\n{respuesta_llm}")
+            await evt.respond(f"❌ Ha ocurrido un error en el proceso de ingesta. Detalles:\n{e}")
 
