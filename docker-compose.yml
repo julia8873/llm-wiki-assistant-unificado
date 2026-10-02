@@ -329,6 +329,9 @@ services:
       - ./config:/config
       - ./src/shared:/shared-pkg:ro
     working_dir: /app
+    ports:
+      - "${PORT_METRICS_API_HOST}:${PORT_METRICS_API}"
+
     environment:
       - PYTHONPATH=/shared-pkg
       - DATABASE_URL=${DATABASE_URL}
@@ -377,7 +380,7 @@ services:
     ports:
       - "${FRONTEND_PUERTO_HOST}:${FRONTEND_PUERTO_CONTENEDOR}"
     environment:
-      - VITE_API_TARGET_URL=${VITE_API_TARGET_URL}
+      - VITE_API_TARGET_URL=${DOMAIN}/metrics
       - PORT=${FRONTEND_PUERTO_CONTENEDOR}
       - VITE_ALLOWED_HOSTS=${DOMAIN}
 
