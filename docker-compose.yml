@@ -379,7 +379,7 @@ services:
     environment:
       - VITE_API_TARGET_URL=${VITE_API_TARGET_URL}
       - PORT=${FRONTEND_PUERTO_CONTENEDOR}
-      - VITE_ALLOWED_HOSTS=${VITE_ALLOWED_HOSTS}
+      - VITE_ALLOWED_HOSTS=${DOMAIN}
 
 volumes:
   mariadb_data:
