@@ -380,7 +380,7 @@ services:
     ports:
       - "${FRONTEND_PUERTO_HOST}:${FRONTEND_PUERTO_CONTENEDOR}"
     environment:
-      - VITE_API_TARGET_URL=${DOMAIN}/metrics
+      - VITE_API_TARGET_URL=${VITE_API_TARGET_URL}
       - VITE_API_BASE_URL=/metrics
       - PORT=${FRONTEND_PUERTO_CONTENEDOR}
       - VITE_ALLOWED_HOSTS=${DOMAIN}
