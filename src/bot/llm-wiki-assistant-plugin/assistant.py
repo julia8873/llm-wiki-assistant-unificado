@@ -471,7 +471,7 @@ class LLMWikiAssistantPlugin(Plugin):
         @brief Método auxiliar para no repetir código entre subida directa a Matrix y comando !ingestar.
         """
         try:
-            respuesta_llm = await self.repo_reader.ingest_file_okf(
+            await self.repo_reader.ingest_file_okf(
                 file_bytes, 
                 filename, 
                 mapeo_data,
@@ -482,7 +482,6 @@ class LLMWikiAssistantPlugin(Plugin):
             await self.repo_reader.process_repository(mapeo_data)
             
             await evt.respond(f"✅ ¡Listo! El archivo '{filename}' ha sido analizado mediante {'OCR Multimodal' if use_ocr else 'Extracción Normal'}. Sus conceptos han sido extraídos y guardados correctamente en tu repositorio. Ya puedes preguntarme sobre ellos.")
-            await evt.respond(f"**Respuesta cruda del LLM:**\n```\n{respuesta_llm}\n```")
         except Exception as e:
             self.log.error(f"Error dentro de _execute_ingest para {filename}: {e}")
             await evt.respond(f"❌ Ha ocurrido un error en el proceso de ingesta. Detalles:\n{e}")
