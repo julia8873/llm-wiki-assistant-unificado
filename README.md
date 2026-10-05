@@ -88,8 +88,15 @@ Contiene los distintos microservicios:
 5. **Configurar el Bot (Maubot):**
    - Accede a la interfaz de administración de Maubot en `http://localhost:29317/_matrix/maubot/` (o el `MAUBOT_PUBLIC_URL` que hayas configurado). Usuario `admin`, contraseña `MAUBOT_ADMIN_PASSWORD` del `.env`.
    - Sube el plugin del bot (empaquetado como `.mbp`) en la pestaña **Plugins**. El plugin compilado se encuentra en `src/bot/llm-wiki-assistant-plugin/plugin.mbp`.
+      <img src="imagenes_README/paso1.png" alt="Paso 1" width="600">
+      <img src="imagenes_README/paso2.png" alt="Paso 2" width="600">
+      
    - Añade el cliente conectándolo a la URL interna de Synapse (`http://synapse:8008`) usando el usuario `@llm_wiki_bot:<DOMAIN>` (el valor de `MATRIX_BOT_USER` en tu `.env`). El **access token del bot** se puede obtener del `.env` tras ejecutar `./instalar.sh`.
+   <img src="imagenes_README/paso3.png" alt="Paso 3" width="600">
+   <img src="imagenes_README/paso4.png" alt="Paso 4" width="600">
    - Crea la instancia uniendo el Cliente y el Plugin.
+   <img src="imagenes_README/paso5.png" alt="Paso 5" width="600">
+   <img src="imagenes_README/paso6.png" alt="Paso 6" width="600">
 
 ---
 

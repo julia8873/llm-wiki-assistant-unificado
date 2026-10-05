@@ -135,6 +135,10 @@ class RepoReader:
             
         # Restringir a la hora de contestar para que solo use ficheros OKF
         results = [r for r in results if "okf/" in r["file_path"] or "/okf" in r["file_path"] or r["file_path"].startswith("okf")]
+        
+        # Filtrar ficheros estructurales y de log para evitar responder sobre la estructura del repositorio
+        estructurales = ["index.md", "log.md", "AGENTS.md"]
+        results = [r for r in results if not any(r["file_path"].endswith(f) for f in estructurales)]
             
         return results
 
