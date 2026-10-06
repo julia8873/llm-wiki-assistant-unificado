@@ -27,25 +27,18 @@ if (!isset($payload['user']['id']) || !isset($payload['user']['password'])) {
     exit;
 }
 
-$username = $payload['user']['id'];
+$username = trim(\core_text::strtolower($payload['user']['id']));
 $password = $payload['user']['password'];
 
-// Validar credenciales usando los plugins de autenticación (sin iniciar sesión en Moodle)
-$authenticated = false;
-$auths = get_enabled_auth_plugins();
-foreach ($auths as $auth) {
-    $authplugin = get_auth_plugin($auth);
-    if ($authplugin->user_login($username, $password)) {
-        $authenticated = true;
-        break;
-    }
-}
-
+// Validar credenciales usando la función oficial de autenticación de Moodle (sin iniciar sesión)
+$failurereason = null;
+$authenticated = authenticate_user_login($username, $password, false, $failurereason);
 if ($authenticated) {
     http_response_code(200);
     echo json_encode(['auth' => true]);
 } else {
     http_response_code(401);
     echo json_encode(['auth' => false]);
+    echo json_encode(['auth' => false, 'reason' => $failurereason]);
 }
 exit;
