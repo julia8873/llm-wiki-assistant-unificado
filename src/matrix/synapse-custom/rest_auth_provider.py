@@ -40,8 +40,7 @@ class RestAuthProvider:
         }).encode('utf-8')
 
         headers = {
-            'Content-Type': 'application/json',
-            'X-Forwarded-Proto': 'https',
+            'Content-Type': 'application/json'
         }
         if self.host_header:
             clean_host = self.host_header
