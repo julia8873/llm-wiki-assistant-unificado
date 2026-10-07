@@ -39,9 +39,16 @@ class RestAuthProvider:
             }
         }).encode('utf-8')
 
-        headers = {'Content-Type': 'application/json'}
+        headers = {
+            'Content-Type': 'application/json',
+            'X-Forwarded-Proto': 'https',
+        }
         if self.host_header:
-            headers['Host'] = self.host_header
+            clean_host = self.host_header
+            if "://" in clean_host:
+                clean_host = clean_host.split("://", 1)[1]
+            clean_host = clean_host.split("/", 1)[0]
+            headers['Host'] = clean_host
 
         req = urllib.request.Request(self.endpoint, data=payload, headers=headers)
         
@@ -69,7 +76,11 @@ class RestAuthProvider:
                         
                     return True
         except urllib.error.HTTPError as e:
-            logger.info("Moodle auth failed for %s with HTTP %s", localpart, e.code)
+            try:
+                err_content = e.read().decode('utf-8', errors='replace')
+            except Exception:
+                err_content = ""
+            logger.info("Moodle auth failed for %s with HTTP %s: %s", localpart, e.code, err_content)
         except Exception as e:
             logger.warning("Error communicating with Moodle auth endpoint: %s", str(e))
             

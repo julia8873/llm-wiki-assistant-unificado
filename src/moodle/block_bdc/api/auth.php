@@ -38,7 +38,6 @@ if ($authenticated) {
     echo json_encode(['auth' => true]);
 } else {
     http_response_code(401);
-    echo json_encode(['auth' => false]);
     echo json_encode(['auth' => false, 'reason' => $failurereason]);
 }
 exit;
