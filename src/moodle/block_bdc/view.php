@@ -117,7 +117,7 @@ if ($lock) {
         
         // Guardar mapeo en la BD central
         try {
-            $mapeo_client->create_mapeo($userid, $courseid, $github_url, $room_id, $USER->username, $course->shortname, $is_teacher);
+            $mapeo_client->create_mapeo($userid, $courseid, $github_url, $room_id, $USER->username, $course->shortname, $is_teacher, $course->fullname);
         } catch (\moodle_exception $e) {
             // Fallback (Capa 2 de idempotencia): Si el API devuelve 409 Conflict a pesar del lock
             // significa que la sala se creó, atrapamos el error, recuperamos la info real y avanzamos.

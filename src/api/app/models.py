@@ -41,6 +41,7 @@ class MapeoCreate(MapeoBase):
     """
     moodle_username: str = ""
     moodle_course_shortname: str = ""
+    moodle_course_fullname: str = ""  # Nombre legible del curso (puede contener tildes y espacios)
 
 
 class MapeoRead(MapeoBase):

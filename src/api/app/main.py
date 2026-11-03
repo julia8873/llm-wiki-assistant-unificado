@@ -13,6 +13,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import hmac
 import hashlib
+import unicodedata
+import re
 from fastapi import Request
 import redis
 from rq import Queue, Retry
@@ -33,6 +35,12 @@ class SunsetMiddleware(BaseHTTPMiddleware):
         if route and getattr(route, "deprecated", False):
             response.headers["Sunset"] = "Wed, 01 Jan 2027 00:00:00 GMT"
         return response
+
+def sanitize_repo_name(name: str) -> str:
+    """Elimina tildes y caracteres especiales para nombres de repositorio Git."""
+    nfkd = unicodedata.normalize('NFKD', name)
+    ascii_name = nfkd.encode('ascii', 'ignore').decode('ascii')
+    return re.sub(r'[^a-zA-Z0-9._-]', '-', ascii_name).strip('-')
 
 app = FastAPI(title="Mapeo API", description="API centralizada para la relación Alumno-Curso-Fork-Sala", docs_url="/docs" if settings.ENVIRONMENT in ["dev", "local"] else None, redoc_url="/redoc" if settings.ENVIRONMENT in ["dev", "local"] else None, openapi_url="/openapi.json" if settings.ENVIRONMENT in ["dev", "local"] else None)
 app.add_middleware(SunsetMiddleware)
@@ -115,7 +123,7 @@ async def create_mapeo(response: Response, request: Request, mapeo: MapeoCreate,
         estado=MapeoEstado.PENDIENTE_GIT,
         is_teacher=1 if mapeo.is_teacher else 0,
         moodle_username=mapeo.moodle_username,
-        moodle_course_name=mapeo.moodle_course_shortname
+        moodle_course_name=mapeo.moodle_course_fullname or mapeo.moodle_course_shortname
     )
     
     try:
@@ -133,8 +141,9 @@ async def create_mapeo(response: Response, request: Request, mapeo: MapeoCreate,
     if mapeo.moodle_username and mapeo.moodle_course_shortname:
         try:
             provider = get_git_provider()
-            nombre_repo = f"{mapeo.moodle_course_shortname}-{mapeo.moodle_username}"
-            repo_oficial_url = f"{mapeo.moodle_course_shortname}-Oficial"
+            safe_shortname = sanitize_repo_name(mapeo.moodle_course_shortname)
+            nombre_repo = f"{safe_shortname}-{mapeo.moodle_username}"
+            repo_oficial_url = f"{safe_shortname}-Oficial"
             
             from app.services.git import load_config
             from urllib.parse import urlparse
@@ -260,7 +269,7 @@ async def create_curso(response: Response, request: Request, curso: CursoCreate,
     try:
         provider = get_git_provider()
         # Usamos el template especificado en el .env como identificador del template oficial
-        repo_url = await provider.crear_repo_oficial(curso.moodle_course_shortname, template_id=settings.TEMPLATE_ID)
+        repo_url = await provider.crear_repo_oficial(sanitize_repo_name(curso.moodle_course_shortname), template_id=settings.TEMPLATE_ID)
         # Marcamos como template para que los alumnos lo puedan copiar limpiamente
         await provider.marcar_como_template(repo_url)
         return {"status": "ok", "repo_url": repo_url}

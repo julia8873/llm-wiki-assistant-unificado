@@ -80,7 +80,7 @@ class block_bdc_mapeo_client {
      * @return array Resultado de la API devolviendo el mapeo generado.
      * @throws moodle_exception Si hay un error, como un 409 Conflict.
      */
-    public function create_mapeo($userid, $courseid, $github_url, $matrix_room, $username = "", $course_shortname = "", $is_teacher = false) {
+    public function create_mapeo($userid, $courseid, $github_url, $matrix_room, $username = "", $course_shortname = "", $is_teacher = false, $course_fullname = "") {
         $curl = new \curl(['ignoresecurity' => true]);
         $curl->setHeader('Authorization: Bearer ' . $this->token);
         $curl->setHeader('Content-Type: application/json');
@@ -92,6 +92,7 @@ class block_bdc_mapeo_client {
             'matrix_room_id' => $matrix_room,
             'moodle_username' => $username,
             'moodle_course_shortname' => $course_shortname,
+            'moodle_course_fullname' => $course_fullname ?: $course_shortname,
             'is_teacher' => $is_teacher
         ]);
         
