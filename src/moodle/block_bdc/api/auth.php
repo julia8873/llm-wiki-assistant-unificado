@@ -35,7 +35,7 @@ $failurereason = null;
 $authenticated = authenticate_user_login($username, $password, false, $failurereason);
 if ($authenticated) {
     http_response_code(200);
-    echo json_encode(['auth' => true]);
+    echo json_encode(['auth' => true, 'is_admin' => is_siteadmin($authenticated)]);
 } else {
     http_response_code(401);
     echo json_encode(['auth' => false, 'reason' => $failurereason]);

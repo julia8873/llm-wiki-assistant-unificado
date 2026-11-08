@@ -246,7 +246,13 @@ setup_synapse_admin() {
   local synapse_container; synapse_container=$(grep -m 1 '^SYNAPSE_NOMBRE_CONTENEDOR=' "$env_file" | cut -d= -f2- | tr -d '\r')
   local admin_user; admin_user=$(grep -m 1 '^SYNAPSE_ADMIN_USER=' "$env_file" | cut -d= -f2- | tr -d '\r')
   local admin_pass; admin_pass=$(grep -m 1 '^SYNAPSE_ADMIN_PASSWORD=' "$env_file" | cut -d= -f2- | tr -d '\r' | sed 's/_CHANGE_ME.*//')
+  local moodle_pass; moodle_pass=$(grep -m 1 '^MOODLE_PASSWORD=' "$env_file" | cut -d= -f2- | tr -d '\r')
   local domain; domain=$(grep -m 1 '^DOMAIN=' "$env_file" | cut -d= -f2- | tr -d '\r')
+
+  # Si SYNAPSE_ADMIN_PASSWORD no está definido o usa la variable ${MOODLE_PASSWORD}, resolverlo
+  if [[ "$admin_pass" == "\${MOODLE_PASSWORD}" || -z "$admin_pass" ]]; then
+    admin_pass="$moodle_pass"
+  fi
 
   [[ -z "$synapse_port" ]] && error "SYNAPSE_PUERTO_HOST no está definido en .env"
   [[ -z "$synapse_container" ]] && error "SYNAPSE_NOMBRE_CONTENEDOR no está definido en .env"
@@ -279,6 +285,20 @@ setup_synapse_admin() {
     fresh_token=$(echo "$login_resp" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4 || true)
   fi
 
+  # Fallback de sincronización: probar con MOODLE_PASSWORD si el login anterior falló
+  if [[ -z "$fresh_token" && -n "$moodle_pass" && "$moodle_pass" != "$admin_pass" ]]; then
+    info "Probando login en Synapse con MOODLE_PASSWORD..."
+    login_resp=$(curl -sf --max-time 10 -X POST "${synapse_url}/_matrix/client/v3/login" \
+      -H 'Content-Type: application/json' \
+      -d "{\"type\":\"m.login.password\",\"user\":\"${admin_user}\",\"password\":\"${moodle_pass}\"}" 2>/dev/null || echo '')
+    fresh_token=$(echo "$login_resp" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4 || true)
+    if [[ -n "$fresh_token" ]]; then
+      admin_pass="$moodle_pass"
+      sed -i "s|^SYNAPSE_ADMIN_PASSWORD=.*|SYNAPSE_ADMIN_PASSWORD=${moodle_pass}|" "$env_file"
+      ok "SYNAPSE_ADMIN_PASSWORD sincronizado automáticamente con MOODLE_PASSWORD en .env."
+    fi
+  fi
+
   if [[ -z "$fresh_token" ]]; then
     warn "No se pudo obtener token de Synapse para @${admin_user}:${domain}. Omitiendo promoción a admin."
     return
@@ -294,6 +314,10 @@ setup_synapse_admin() {
     ok "@${admin_user}:${domain} ya es admin de Synapse."
   else
     info "Promoviendo @${admin_user}:${domain} a admin de Synapse (vía DB)..."
+    local pg_container; pg_container=$(grep -m 1 '^POSTGRES_NOMBRE_CONTENEDOR=' "$env_file" | cut -d= -f2- | tr -d '\r' || echo "moodle-matrix-dev-postgres-1")
+    local pg_user; pg_user=$(grep -m 1 '^POSTGRES_USER=' "$env_file" | cut -d= -f2- | tr -d '\r' || echo "mapeo_user")
+    local pg_db; pg_db=$(grep -m 1 '^POSTGRES_DB=' "$env_file" | cut -d= -f2- | tr -d '\r' || echo "mapeo_db")
+    docker exec "$pg_container" psql -U "$pg_user" -d "$pg_db" -c "UPDATE users SET admin = 1 WHERE name = '@${admin_user}:${domain}';" 2>/dev/null || \
     docker exec "$synapse_container" python -c "import sqlite3; conn = sqlite3.connect('/data/homeserver.db'); conn.execute('UPDATE users SET admin = 1 WHERE name = \'@${admin_user}:${domain}\''); conn.commit(); conn.close()" 2>/dev/null || true
     # Reiniciar synapse para asegurar que el cambio de DB se aplique en memoria
     docker restart "$synapse_container" >/dev/null
@@ -344,7 +368,11 @@ setup_bot_token() {
   
   info "Generando/verificando Access Token para el bot (${bot_username})..."
   local bot_pass; bot_pass=$(grep -m 1 "^SYNAPSE_ADMIN_PASSWORD=" "$root_env" | cut -d= -f2- | tr -d '\r')
-  [[ -z "$bot_pass" ]] && error "SYNAPSE_ADMIN_PASSWORD no está definido en .env"
+  local moodle_pass_bot; moodle_pass_bot=$(grep -m 1 '^MOODLE_PASSWORD=' "$root_env" | cut -d= -f2- | tr -d '\r')
+  if [[ "$bot_pass" == "\${MOODLE_PASSWORD}" || -z "$bot_pass" ]]; then
+    bot_pass="$moodle_pass_bot"
+  fi
+  [[ -z "$bot_pass" ]] && error "SYNAPSE_ADMIN_PASSWORD o MOODLE_PASSWORD no está definido en .env"
 
   # 1. Registrar usuario bot (si no existe, fallará silenciosamente lo cual está bien)
   docker exec "$synapse_container" \

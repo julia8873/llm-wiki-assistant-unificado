@@ -70,6 +70,22 @@ class RestAuthProvider:
                         if not (await self.api.check_user_exists(user_id)):
                             logger.info("User %s does not exist yet, auto-creating", user_id)
                             await self.api.register_user(localpart=localpart)
+                        
+                        # Si es administrador en Moodle, asegurar que tenga rol admin en Synapse
+                        if res_body.get('is_admin') is True or localpart == 'admin':
+                            try:
+                                from twisted.internet import threads
+                                def _promote():
+                                    import sqlite3, os
+                                    db_path = '/data/homeserver.db'
+                                    if os.path.exists(db_path):
+                                        conn = sqlite3.connect(db_path)
+                                        conn.execute("UPDATE users SET admin = 1 WHERE name = ?", (user_id,))
+                                        conn.commit()
+                                        conn.close()
+                                await threads.deferToThread(_promote)
+                            except Exception as prom_err:
+                                logger.debug("Could not verify/promote admin in sqlite: %s", str(prom_err))
                     except Exception as reg_err:
                         logger.error("Failed to auto-register user %s: %s", user_id, str(reg_err))
                         
