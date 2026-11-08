@@ -35,6 +35,3 @@ RUN rm -f /opt/bitnami/php/bin/php \
 
 # 3. Creamos enlace simbólico para el plugin BDC
 RUN ln -s /moodle-custom-plugin /opt/bitnami/moodle/blocks/bdc
-
-# Volvemos al usuario sin privilegios por seguridad
-USER 1001
