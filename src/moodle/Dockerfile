@@ -33,9 +33,26 @@ RUN rm -f /opt/bitnami/php/bin/php \
         && ln -s /usr/sbin/php-fpm8.3 /opt/bitnami/php/sbin/php-fpm; \
     fi
 
-# 3. Creamos enlace simbólico para el plugin BDC
+# 3. Aumentar max_input_vars a 6000 (necesario para formularios grandes de Moodle)
+RUN for ini in \
+        /etc/php/8.3/apache2/php.ini \
+        /etc/php/8.3/cli/php.ini \
+        /etc/php/8.3/fpm/php.ini \
+        /opt/bitnami/php/etc/php.ini; \
+    do \
+        if [ -f "$ini" ]; then \
+            sed -i 's/^;\?\s*max_input_vars\s*=.*/max_input_vars = 6000/' "$ini"; \
+        fi; \
+    done \
+    && echo "max_input_vars = 6000" > /etc/php/8.3/apache2/conf.d/99-max-input-vars.ini 2>/dev/null || true \
+    && echo "max_input_vars = 6000" > /etc/php/8.3/cli/conf.d/99-max-input-vars.ini 2>/dev/null || true \
+    && echo "max_input_vars = 6000" > /etc/php/8.3/fpm/conf.d/99-max-input-vars.ini 2>/dev/null || true \
+    && mkdir -p /opt/bitnami/php/etc/conf.d \
+    && echo "max_input_vars = 6000" > /opt/bitnami/php/etc/conf.d/99-max-input-vars.ini
+
+# 4. Creamos enlace simbólico para el plugin BDC
 RUN ln -s /moodle-custom-plugin /opt/bitnami/moodle/blocks/bdc
 
-# 4. Asegurar que Moodle wwwroot use dinámicamente MOODLE_URL en cada inicio (Issues #2 y #4)
+# 5. Asegurar que Moodle wwwroot use dinámicamente MOODLE_URL en cada inicio (Issues #2 y #4)
 COPY fix_wwwroot.php /opt/bitnami/scripts/moodle/fix_wwwroot.php
 RUN echo 'php /opt/bitnami/scripts/moodle/fix_wwwroot.php || true' >> /opt/bitnami/scripts/moodle/setup.sh
