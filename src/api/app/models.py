@@ -94,3 +94,19 @@ class DiscrepanciaAuditPayload(BaseModel):
 
 class DiscrepanciaAuditResponse(BaseModel):
     commit_log_ref: str
+
+class MatrixTokenRequest(BaseModel):
+    """!
+    @brief Solicitud de token temporal de inicio de sesión para Matrix.
+    """
+    username: str
+    domain: Optional[str] = None
+
+class MatrixTokenResponse(BaseModel):
+    """!
+    @brief Respuesta con el token de login temporal de Matrix (m.login.token).
+    """
+    login_token: str
+    matrix_user_id: str
+    expires_in_ms: int
+

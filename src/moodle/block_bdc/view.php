@@ -44,13 +44,19 @@ if ($mapeo && !empty($mapeo['matrix_room_id'])) {
         throw new \moodle_exception('error_missing_config', 'block_bdc', '', 'DOMAIN no está configurado en el entorno.');
     }
     $matrix_user_id = '@' . $USER->username . ':' . $domain;
+    $synapse_client->ensure_user_exists($USER->username);
     $synapse_client->join_user_to_room($mapeo['matrix_room_id'], $matrix_user_id);
 
     $element_url = getenv('ELEMENT_URL_BASE');
     if (empty($element_url)) {
         throw new \moodle_exception('error_missing_config', 'block_bdc', '', 'ELEMENT_URL_BASE no está configurado en el entorno.');
     }
-    $redirect_url = $element_url . '/#/room/' . urlencode($mapeo['matrix_room_id']);
+    $login_token = $mapeo_client->get_matrix_login_token($USER->username, $domain);
+    if (!empty($login_token)) {
+        $redirect_url = $element_url . '/sso.html?loginToken=' . urlencode($login_token) . '&room=' . urlencode($mapeo['matrix_room_id']);
+    } else {
+        $redirect_url = $element_url . '/#/room/' . urlencode($mapeo['matrix_room_id']);
+    }
     redirect($redirect_url);
 }
 
@@ -73,13 +79,20 @@ if ($lock) {
                 throw new \moodle_exception('error_missing_config', 'block_bdc', '', 'DOMAIN no está configurado en el entorno.');
             }
             $matrix_user_id = '@' . $USER->username . ':' . $domain;
+            $synapse_client->ensure_user_exists($USER->username);
             $synapse_client->join_user_to_room($mapeo['matrix_room_id'], $matrix_user_id);
 
             $element_url = getenv('ELEMENT_URL_BASE');
             if (empty($element_url)) {
                 throw new \moodle_exception('error_missing_config', 'block_bdc', '', 'ELEMENT_URL_BASE no está configurado en el entorno.');
             }
-            redirect($element_url . '/#/room/' . urlencode($mapeo['matrix_room_id']));
+            $login_token = $mapeo_client->get_matrix_login_token($USER->username, $domain);
+            if (!empty($login_token)) {
+                $redirect_url = $element_url . '/sso.html?loginToken=' . urlencode($login_token) . '&room=' . urlencode($mapeo['matrix_room_id']);
+            } else {
+                $redirect_url = $element_url . '/#/room/' . urlencode($mapeo['matrix_room_id']);
+            }
+            redirect($redirect_url);
         }
         
         // No existe. Crear la sala en Matrix.
@@ -135,7 +148,13 @@ if ($lock) {
         
         // Redirigir
         $element_url = getenv('ELEMENT_URL_BASE') ?: 'http://' . $domain . '/element';
-        redirect($element_url . '/#/room/' . urlencode($room_id));
+        $login_token = $mapeo_client->get_matrix_login_token($USER->username, $domain);
+        if (!empty($login_token)) {
+            $redirect_url = $element_url . '/sso.html?loginToken=' . urlencode($login_token) . '&room=' . urlencode($room_id);
+        } else {
+            $redirect_url = $element_url . '/#/room/' . urlencode($room_id);
+        }
+        redirect($redirect_url);
         
     } catch (\Exception $e) {
         $lock->release();

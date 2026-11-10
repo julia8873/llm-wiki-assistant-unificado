@@ -13,6 +13,9 @@ server {
     location = /index.html {
         add_header Cache-Control "no-cache";
     }
+    location = /sso.html {
+        add_header Cache-Control "no-cache";
+    }
     location = /version {
         add_header Cache-Control "no-cache";
     }

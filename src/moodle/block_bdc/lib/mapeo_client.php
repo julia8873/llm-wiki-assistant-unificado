@@ -110,5 +110,35 @@ class block_bdc_mapeo_client {
         return json_decode($response, true);
     }
 
+    /**
+     * Solicita a la API un login token temporal de Matrix (m.login.token) para auto-login del usuario.
+     *
+     * @param string $username Nombre de usuario en Moodle (ej. 'student1')
+     * @param string $domain Dominio de Matrix (opcional)
+     * @return string|null El token de login temporal o null si falla.
+     */
+    public function get_matrix_login_token($username, $domain = '') {
+        $curl = new \curl(['ignoresecurity' => true]);
+        $curl->setHeader('Authorization: Bearer ' . $this->token);
+        $curl->setHeader('Content-Type: application/json');
 
+        $payload = json_encode([
+            'username' => $username,
+            'domain' => $domain
+        ]);
+
+        $url = $this->baseurl . '/v1/auth/matrix-token';
+        $response = $curl->post($url, $payload);
+        $status = $curl->get_info()['http_code'];
+
+        if ($status === 200) {
+            $data = json_decode($response, true);
+            if (!empty($data['login_token'])) {
+                return $data['login_token'];
+            }
+        } else {
+            error_log("BLOCK_BDC: Error obteniendo matrix login token (HTTP $status): $response");
+        }
+        return null;
+    }
 }

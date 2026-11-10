@@ -15,11 +15,14 @@ import hmac
 import hashlib
 import unicodedata
 import re
+import secrets
+import time
+from sqlalchemy import text
 from fastapi import Request
 import redis
 from rq import Queue, Retry
 
-from .models import MapeoCreate, MapeoRead, MapeoEstado, CursoCreate, EventoCreate, EventoRead
+from .models import MapeoCreate, MapeoRead, MapeoEstado, CursoCreate, EventoCreate, EventoRead, MatrixTokenRequest, MatrixTokenResponse
 from .db import get_session, MapeoDB, EventosBotDB
 from .services.git import get_git_provider, GitProviderConfigError
 from .core.config import settings
@@ -430,3 +433,38 @@ async def audit_discrepancia(response: Response, request: Request, payload: Disc
         import logging
         logging.error(f"Failed to audit discrepancia: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Fallo al registrar auditoría en Git: {str(e)}")
+
+@app.post("/v1/auth/matrix-token", response_model=MatrixTokenResponse)
+def create_matrix_token(
+    payload: MatrixTokenRequest,
+    session: Session = Depends(get_session),
+    token: str = Depends(verify_token)
+):
+    """!
+    @brief Genera un login token temporal de un solo uso en Synapse (m.login.token).
+    @details Permite la autenticación transparente (SSO) de alumnos y profesores desde Moodle hacia Matrix/Element Web.
+    """
+    domain = payload.domain or getattr(settings, "DOMAIN", "localhost") or "localhost"
+    username = payload.username.strip().lower()
+    matrix_user_id = f"@{username}:{domain}"
+
+    # Generar token aleatorio criptográficamente seguro con prefijo estándar syl_
+    random_str = secrets.token_urlsafe(24)
+    login_token = f"syl_{random_str}"
+
+    now_ms = int(time.time() * 1000)
+    duration_ms = 5 * 60 * 1000  # 5 minutos de validez
+    expiry_ts = now_ms + duration_ms
+
+    session.execute(
+        text("INSERT INTO login_tokens (token, user_id, expiry_ts) VALUES (:token, :user_id, :expiry_ts)"),
+        {"token": login_token, "user_id": matrix_user_id, "expiry_ts": expiry_ts}
+    )
+    session.commit()
+
+    return MatrixTokenResponse(
+        login_token=login_token,
+        matrix_user_id=matrix_user_id,
+        expires_in_ms=duration_ms
+    )
+

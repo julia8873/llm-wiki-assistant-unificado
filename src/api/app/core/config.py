@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     MAPEO_API_TOKEN: str
     ENVIRONMENT: str = "local"
+    DOMAIN: str = "localhost"
     PUBLIC_API_URL: str | None = None
     GITHUB_WEBHOOK_SECRET: str | None = None
     

@@ -91,6 +91,7 @@ services:
     volumes:
       - ./src/matrix/element/config.json:/app/config.json:ro
       - ./src/matrix/element/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./src/matrix/element/sso.html:/app/sso.html:ro
     depends_on:
       synapse:
         condition: service_healthy
@@ -105,6 +106,7 @@ services:
       - GITHUB_PAT=${GITHUB_PAT}
       - GITHUB_ORG=${GITHUB_ORG}
       - DATABASE_URL=${DATABASE_URL}
+      - DOMAIN=${DOMAIN}
       - TEMPLATE_ID=${TEMPLATE_ID}
       - PYTHONPATH=/shared-pkg
       - PORT_MAPEO_API=${MAPEO_API_PUERTO_CONTENEDOR}
