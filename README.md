@@ -3,18 +3,22 @@
 En este repositorio se conectan los servicios de Moodle, Matrix, Git, y una API para obtener métricas de las interacciones de los estudiantes con LLMs.
 
 ## Índice
-- [Introducción](#introduccion)
-- [Tecnologías usadas](#tecnologias-usadas)
+- [Tecnologías usadas](#tecnologías-usadas)
+- [Diagramas de interacción](#diagramas-de-interacción)
+  - [1. Creación de curso y repositorio oficial](#1-creación-de-curso-y-repositorio-oficial)
+  - [2. Creación de sala Matrix y repositorio del alumno](#2-creación-de-sala-matrix-y-repositorio-del-alumno)
+  - [3. Autenticación en Element contra Moodle](#3-autenticación-en-element-contra-moodle)
+  - [4. Consulta en el chat y respuesta asistida (RAG)](#4-consulta-en-el-chat-y-respuesta-asistida-rag)
+  - [5. Anonimización PII, cifrado en Vault y guardado en Git](#5-anonimización-pii-cifrado-en-vault-y-guardado-en-git)
+  - [6. Métricas y auditoría de discrepancias](#6-métricas-y-auditoría-de-discrepancias)
+  - [7. Autenticación en el Dashboard Frontend](#7-autenticación-en-el-dashboard-frontend)
+  - [8. Generación de resúmenes evaluativos con IA](#8-generación-de-resúmenes-evaluativos-con-ia)
 - [Estructura del Proyecto](#estructura-del-proyecto)
   - [Raíz](#raíz)
   - [Directorios Globales](#directorios-globales)
   - [Código Fuente (`src/`)](#código-fuente-src)
 - [Guía de Instalación Paso a Paso](#guía-de-instalación-paso-a-paso)
   - [Generación de Documentación (Doxygen)](#generación-de-documentación-doxygen)
-
----
-
-## Introducción
 
 ---
 
@@ -37,6 +41,69 @@ En este repositorio se conectan los servicios de Moodle, Matrix, Git, y una API 
 | Copias de seguridad | `backup` | Alpine, cron, `pg_dump` | Copia diaria a las 03:00 |
 | Infraestructura | — | Docker, Docker Compose, Bash | Despliegue con `instalar.sh` |
 | Tests | — | pytest, respx, Playwright | Pruebas unitarias, de integración y e2e |
+---
+
+
+## Diagramas de interacción
+
+A continuación se presentan los diagramas de secuencia que describen el flujo de interacción entre los diferentes microservicios y usuarios de la plataforma:
+
+### 1. Creación de curso y repositorio oficial
+Profesor o administrador crea un nuevo curso en Moodle.
+
+![Creación de curso y repositorio oficial](imagenes_README/diagramas-flujo/1.crear-curso.png)
+
+---
+
+### 2. Creación de sala Matrix y repositorio del alumno
+Cuando el estudiante interactúa por primera vez con el bloque de Moodle.
+
+![Creación de sala Matrix y repositorio del alumno](imagenes_README/diagramas-flujo/2.sala-matrix.png)
+
+---
+
+### 3. Autenticación en Element con Moodle
+Al acceder desde Moodle a Element, se autentica al usuario en Element.
+
+![Autenticación en Element contra Moodle](imagenes_README/diagramas-flujo/3.login-element.png)
+
+---
+
+### 4. Consulta en el chat y respuesta asistida (RAG)
+
+Flujo de cuando el usuario interactua con el bot o realiza una consulta.
+
+![Consulta en el chat y respuesta asistida](imagenes_README/diagramas-flujo/4.consulta-chat.png)
+
+---
+
+### 5. Anonimización PII, cifrado en Vault y guardado en Git
+
+Mecanismo de protección de la privacidad que anonimiza datos personales.
+
+![Anonimización PII, cifrado en Vault y guardado en Git](imagenes_README/diagramas-flujo/5.registro-pii.png)
+
+---
+
+### 6. Métricas y auditoría de discrepancias
+Proceso en segundo plano para manejar las métricas (asegurándose que esté todo sincronizado)
+
+![Métricas y auditoría de discrepancias](imagenes_README/diagramas-flujo/6.metricas-auditoria.png)
+
+---
+
+### 7. Autenticación en el Dashboard Frontend
+Inicio de sesión y validación de ser profesor. Muestra las métricas de los cursos del profesor.
+
+![Autenticación en el Dashboard Frontend](imagenes_README/diagramas-flujo/7.login-frontend.png)
+---
+
+### 8. Generación de resúmenes de un curso
+
+Profesor solicita un resumen general del curso (teniendo en cuenta las interacciones de sus alumnos con el chat).
+
+![Generación de resúmenes evaluativos con IA](imagenes_README/diagramas-flujo/8.resumen-agente.png)
+
 ---
 
 ## Estructura del Proyecto
@@ -155,34 +222,3 @@ Hay dos formas de proporcionar apuntes al bot para que extraiga sus conceptos us
    El bot descargará el documento directamente desde GitHub y comenzará el proceso de extracción. Añade la palabra `ocr` al final si el documento contiene imágenes o escaneos.
 
 ---
-
-## Usuario de GitHub (colaborador de su repositorio / del repositorio oficial)
-
-Alumnos y profesores pueden indicar su usuario de GitHub desde el bloque de Moodle (enlace **«Indicar usuario de GitHub»** bajo el botón de acceso). Se puede cambiar o eliminar en cualquier momento:
-
-| Rol | Repositorio al que se le añade como colaborador | Permiso |
-|---|---|---|
-| Alumno | Su propio repositorio de la asignatura | `push` |
-| Profesor | Repositorio **oficial** de la asignatura (`<asignatura>-Oficial`) | `push` |
-
-- Si lo indica **antes** de crear su sala, se le añade como colaborador al crear su mapeo (repositorio propio en el caso del alumno, repositorio oficial en el caso del profesor).
-- Si lo indica, cambia o elimina **después**, la API revoca el acceso anterior (y cancela la invitación pendiente, si la hay) y da acceso al nuevo usuario en todos sus repositorios, con el permiso que corresponde a su rol en cada asignatura.
-- Si no lo indica, el repositorio se crea igualmente, sin colaborador. El nombre de usuario de Moodle **no** se usa como usuario de GitHub.
-- GitHub envía una invitación que el usuario debe aceptar.
-- El permiso de profesor se define en `TEACHER_REPO_PERMISSION` (`src/api/app/main.py`). Es `push` porque `maintain` solo existe en organizaciones de GitHub y falla (HTTP 422) en cuentas personales; si usas una organización puedes cambiarlo a `maintain`.
-
-Endpoints de `mapeo-api` (requieren el token de la API): `PUT /v1/usuarios/{moodle_user_id}/git-username` y `DELETE /v1/usuarios/{moodle_user_id}/git-username`.
-
-> **Actualización de un despliegue existente:** `alembic upgrade head` (se ejecuta solo al arrancar el contenedor `mapeo-api`) añade la columna `git_username`. En Moodle, ejecuta `php admin/cli/upgrade.php` (o la actualización desde *Administración del sitio → Notificaciones*) para registrar la nueva versión del plugin y sus textos.
-
----
-
-## Resolución de Problemas
-
-### Synapse no inicia por falta de permisos
-Si el contenedor de Matrix (`synapse`) se reinicia o falla al intentar escribir en su base de datos local y/o subir archivos, es probable que no tenga permisos sobre la carpeta montada como volumen.
-
-Se le puede dar permisos al usuario de Synapse (cuyo UID es `991`) en el directorio `synapse-data`:
-```bash
-sudo chown -R 991:991 ./src/matrix/synapse-data
-```
