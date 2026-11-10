@@ -3,6 +3,8 @@
 En este repositorio se conectan los servicios de Moodle, Matrix, Git, y una API para obtener métricas de las interacciones de los estudiantes con LLMs.
 
 ## Índice
+- [Introducción](#introduccion)
+- [Tecnologías usadas](#tecnologias-usadas)
 - [Estructura del Proyecto](#estructura-del-proyecto)
   - [Raíz](#raíz)
   - [Directorios Globales](#directorios-globales)
@@ -10,6 +12,31 @@ En este repositorio se conectan los servicios de Moodle, Matrix, Git, y una API 
 - [Guía de Instalación Paso a Paso](#guía-de-instalación-paso-a-paso)
   - [Generación de Documentación (Doxygen)](#generación-de-documentación-doxygen)
 
+---
+
+## Introducción
+
+---
+
+## Tecnologías Usadas
+| Capa | Servicio | Tecnologías | Función |
+| --- | --- | --- | --- |
+| Plataforma educativa | `moodle` | Moodle (Bitnami), PHP 8.3, MariaDB 10.11 | Cursos y usuarios; el bloque `block_bdc` crea la sala y el repositorio de cada alumno |
+| Chat | `synapse`, `element` | Matrix Synapse, Element Web, nginx | Servidor y cliente web de chat; el login se valida contra Moodle |
+| Bot | `maubot`, `sync-worker-1/2` | Maubot, Python, httpx, asyncpg, RQ | Responde en las salas, sincroniza repositorios y registra interacciones |
+| Búsqueda semántica | `pgvector` | PostgreSQL 16 + pgvector | Almacén de *embeddings* de los apuntes |
+| Cola de tareas | `redis` | Redis 7 (AOF), RQ | Trabajos en segundo plano y bloqueos distribuidos |
+| API de mapeo | `mapeo-api` | Python 3.11, FastAPI, SQLAlchemy, Alembic, Pydantic | Relación Alumno ↔ Git ↔ Matrix; crea repositorios y colaboradores |
+| Base de datos | `postgres` | PostgreSQL 16 | Datos de mapeo, métricas y Synapse |
+| API de métricas | `metrics-api` | FastAPI, SQLAlchemy, Alembic, PyJWT, Fernet (cryptography) | Métricas, login con JWT, rúbricas, agente evaluador y vault de PII |
+| Auditoría | `metrics-worker` | Python asyncio, httpx | Contrasta el historial de Git con la base de datos |
+| Dashboard | `frontend` | React 19, TypeScript, Vite, Recharts, React Router | Panel del profesorado |
+| Privacidad | `sync_worker/pii_guard` | Presidio, spaCy (`es_core_news_lg`, `en_core_web_lg`) | Pseudonimiza datos personales antes de guardar los logs |
+| Control de versiones | — | GitHub, GitLab o Git autoalojado | Repositorio por alumno y repositorio oficial por asignatura |
+| Modelos de lenguaje | — | OpenAI-compatible, Gemini, Ollama (opcional) | Respuestas del bot y resúmenes del agente evaluador |
+| Copias de seguridad | `backup` | Alpine, cron, `pg_dump` | Copia diaria a las 03:00 |
+| Infraestructura | — | Docker, Docker Compose, Bash | Despliegue con `instalar.sh` |
+| Tests | — | pytest, respx, Playwright | Pruebas unitarias, de integración y e2e |
 ---
 
 ## Estructura del Proyecto
