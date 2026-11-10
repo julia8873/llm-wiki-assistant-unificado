@@ -219,3 +219,35 @@ class GitLabProvider(GitProviderClient):
             if res.status_code not in (201, 409):
                 raise GitLabProvisionError(f"Error al añadir colaborador {username} en {repo_name}: HTTP {res.status_code} {res.text}")
             logger.info(f"Colaborador {username} ({access_level}) añadido a {self.org}/{repo_name}.")
+
+    async def _buscar_usuario_id(self, client: httpx.AsyncClient, username: str):
+        """
+        Devuelve el ID numérico del usuario en GitLab o None si no existe.
+        """
+        user_res = await client.get("/users", params={"username": username})
+        if user_res.status_code != 200:
+            raise GitLabProvisionError(f"Error buscando el usuario {username}: HTTP {user_res.status_code}")
+        users = user_res.json()
+        return users[0]["id"] if users else None
+
+    async def eliminar_colaborador(self, repo_url_or_name: str, username: str) -> None:
+        """
+        Revoca el acceso de un usuario a un proyecto. Es idempotente.
+        """
+        repo_name = repo_url_or_name.split('/')[-1].replace('.git', '')
+        project_path = f"{self.org}/{repo_name}".replace("/", "%2F")
+        async with await self._get_client() as client:
+            user_id = await self._buscar_usuario_id(client, username)
+            if user_id is None:
+                return
+            res = await client.delete(f"/projects/{project_path}/members/{user_id}")
+            if res.status_code not in (204, 404):
+                raise GitLabProvisionError(f"Error al eliminar colaborador {username} de {repo_name}: HTTP {res.status_code} {res.text}")
+            logger.info(f"Colaborador {username} eliminado de {self.org}/{repo_name}.")
+
+    async def usuario_existe(self, username: str) -> bool:
+        """
+        Comprueba si existe una cuenta de GitLab con ese nombre de usuario.
+        """
+        async with await self._get_client() as client:
+            return (await self._buscar_usuario_id(client, username)) is not None

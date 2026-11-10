@@ -129,6 +129,21 @@ Hay dos formas de proporcionar apuntes al bot para que extraiga sus conceptos us
 
 ---
 
+## Usuario de GitHub del alumno (colaborador de su repositorio)
+
+Cada alumno puede indicar su usuario de GitHub desde el bloque de Moodle (enlace **«Indicar usuario de GitHub»** bajo el botón de acceso). Se puede cambiar o eliminar en cualquier momento:
+
+- Si el alumno lo indica **antes** de crear su sala, se le añade como colaborador (permiso `push`) al crear su repositorio.
+- Si lo indica, cambia o elimina **después**, la API revoca el acceso anterior (y cancela la invitación pendiente, si la hay) y da acceso al nuevo usuario en todos sus repositorios.
+- Si no lo indica, el repositorio se crea igualmente, sin colaborador. El nombre de usuario de Moodle **no** se usa como usuario de GitHub.
+- GitHub envía una invitación que el alumno debe aceptar.
+
+Endpoints de `mapeo-api` (requieren el token de la API): `PUT /v1/usuarios/{moodle_user_id}/git-username` y `DELETE /v1/usuarios/{moodle_user_id}/git-username`.
+
+> **Actualización de un despliegue existente:** `alembic upgrade head` (se ejecuta solo al arrancar el contenedor `mapeo-api`) añade la columna `git_username`. En Moodle, ejecuta `php admin/cli/upgrade.php` (o la actualización desde *Administración del sitio → Notificaciones*) para registrar la nueva versión del plugin y sus textos.
+
+---
+
 ## Resolución de Problemas
 
 ### Synapse no inicia por falta de permisos

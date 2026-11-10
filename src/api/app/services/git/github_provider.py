@@ -7,6 +7,7 @@ y añadir estudiantes a sus repositorios.
 
 import os
 import httpx
+from urllib.parse import quote
 import logging
 from .base import GitProviderClient
 from app.core.config import settings
@@ -226,3 +227,40 @@ class GitHubProvider(GitProviderClient):
             if res.status_code not in (201, 204):
                 raise GitHubProvisionError(f"Error al añadir colaborador {username} en {repo_name}: HTTP {res.status_code} {res.text}")
             logger.info(f"Colaborador {username} ({permission}) añadido a {self.org}/{repo_name}.")
+
+    async def eliminar_colaborador(self, repo_url_or_name: str, username: str) -> None:
+        """
+        Revoca el acceso de un usuario a un repositorio y cancela su invitación si sigue pendiente.
+        Es idempotente: si el usuario no era colaborador, no da error.
+        """
+        repo_name = repo_url_or_name.split('/')[-1].replace('.git', '')
+        user = quote(username, safe="")
+        async with await self._get_client() as client:
+            res = await client.delete(f"/repos/{self.org}/{repo_name}/collaborators/{user}")
+            if res.status_code not in (204, 404):
+                raise GitHubProvisionError(f"Error al eliminar colaborador {username} de {repo_name}: HTTP {res.status_code} {res.text}")
+
+            # Si el usuario aún no aceptó la invitación, hay que cancelarla aparte.
+            inv_res = await client.get(f"/repos/{self.org}/{repo_name}/invitations", params={"per_page": 100})
+            if inv_res.status_code == 200:
+                for inv in inv_res.json():
+                    login = ((inv.get("invitee") or {}).get("login") or "").lower()
+                    if login == username.lower():
+                        del_res = await client.delete(f"/repos/{self.org}/{repo_name}/invitations/{inv['id']}")
+                        if del_res.status_code not in (204, 404):
+                            raise GitHubProvisionError(f"Error al cancelar la invitación de {username} en {repo_name}: HTTP {del_res.status_code} {del_res.text}")
+            else:
+                logger.warning(f"No se pudieron listar las invitaciones de {repo_name} (HTTP {inv_res.status_code})")
+            logger.info(f"Colaborador {username} eliminado de {self.org}/{repo_name}.")
+
+    async def usuario_existe(self, username: str) -> bool:
+        """
+        Comprueba si existe una cuenta de GitHub con ese nombre de usuario.
+        """
+        async with await self._get_client() as client:
+            res = await client.get(f"/users/{quote(username, safe='')}")
+            if res.status_code == 200:
+                return True
+            if res.status_code == 404:
+                return False
+            raise GitHubProvisionError(f"Error comprobando el usuario {username}: HTTP {res.status_code}")

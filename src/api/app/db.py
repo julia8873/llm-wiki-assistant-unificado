@@ -39,6 +39,7 @@ class MapeoDB(Base):
     is_teacher = Column(Integer, default=0)
     moodle_username = Column(String, nullable=True)
     moodle_course_name = Column(String, nullable=True)
+    git_username = Column(String, nullable=True)
     course_close_date = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

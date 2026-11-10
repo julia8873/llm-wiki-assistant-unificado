@@ -64,6 +64,33 @@ class block_bdc extends block_base {
             ['class' => 'text-center p-3']
         );
 
+        // Estado del usuario de GitHub del alumno (no es crítico: nunca debe romper el bloque).
+        try {
+            $context = \context_course::instance($courseid);
+            $is_teacher = has_capability('moodle/course:update', $context)
+                || has_capability('moodle/course:viewhiddenactivities', $context)
+                || has_capability('moodle/grade:edit', $context);
+            if (!$is_teacher) {
+                // El nombre de la preferencia es el mismo que usan view.php y github_username.php.
+                $ghuser = (string)get_user_preferences('block_bdc_github_username', '');
+                $ghurl = new moodle_url('/blocks/bdc/github_username.php', ['courseid' => $courseid]);
+                if ($ghuser !== '') {
+                    $msg = get_string('github_current', 'block_bdc', s($ghuser));
+                    $linktext = get_string('github_edit', 'block_bdc');
+                } else {
+                    $msg = get_string('github_not_set', 'block_bdc');
+                    $linktext = get_string('github_set', 'block_bdc');
+                }
+                $this->content->text .= \html_writer::tag('div',
+                    \html_writer::tag('div', $msg, ['class' => 'small text-muted']) .
+                    \html_writer::link($ghurl, $linktext, ['class' => 'small']),
+                    ['class' => 'text-center pb-3']
+                );
+            }
+        } catch (\Throwable $e) {
+            debugging('block_bdc: no se pudo mostrar el usuario de GitHub: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
+
         return $this->content;
     }
 }

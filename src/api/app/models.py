@@ -32,6 +32,7 @@ class MapeoBase(BaseModel):
     is_teacher: bool = False
     moodle_username: Optional[str] = None
     moodle_course_name: Optional[str] = None
+    git_username: Optional[str] = None  # Usuario del alumno en el proveedor Git (colaborador de su repo)
     course_close_date: Optional[datetime] = None
 
 class MapeoCreate(MapeoBase):
@@ -63,6 +64,21 @@ class PaginatedMapeos(BaseModel):
     next_cursor: Optional[int] = None
     has_more: bool
 
+
+
+class GitUsernameUpdate(BaseModel):
+    """!
+    @brief Solicitud para fijar/cambiar el usuario Git de un alumno.
+    """
+    git_username: str
+
+class GitUsernameSyncResponse(BaseModel):
+    """!
+    @brief Resultado de sincronizar el usuario Git del alumno con sus repositorios.
+    """
+    git_username: Optional[str] = None
+    repos_updated: int = 0
+    errors: List[str] = []
 
 
 class CursoCreate(BaseModel):

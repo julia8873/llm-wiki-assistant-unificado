@@ -77,10 +77,12 @@ class block_bdc_mapeo_client {
      * @param string $username Username del usuario en Moodle para generar el repositorio [asignatura]-[usuario].
      * @param string $course_shortname Nombre corto del curso para usar como base del repositorio template.
      * @param bool $is_teacher Indica si el usuario es un profesor.
+     * @param string $course_fullname Nombre completo del curso.
+     * @param string $git_username Usuario de GitHub del alumno (opcional) para añadirlo como colaborador.
      * @return array Resultado de la API devolviendo el mapeo generado.
      * @throws moodle_exception Si hay un error, como un 409 Conflict.
      */
-    public function create_mapeo($userid, $courseid, $github_url, $matrix_room, $username = "", $course_shortname = "", $is_teacher = false, $course_fullname = "") {
+    public function create_mapeo($userid, $courseid, $github_url, $matrix_room, $username = "", $course_shortname = "", $is_teacher = false, $course_fullname = "", $git_username = "") {
         $curl = new \curl(['ignoresecurity' => true]);
         $curl->setHeader('Authorization: Bearer ' . $this->token);
         $curl->setHeader('Content-Type: application/json');
@@ -93,7 +95,8 @@ class block_bdc_mapeo_client {
             'moodle_username' => $username,
             'moodle_course_shortname' => $course_shortname,
             'moodle_course_fullname' => $course_fullname ?: $course_shortname,
-            'is_teacher' => $is_teacher
+            'is_teacher' => $is_teacher,
+            'git_username' => $git_username !== '' ? $git_username : null
         ]);
         
         $url = $this->baseurl . '/mapeos';
@@ -140,5 +143,65 @@ class block_bdc_mapeo_client {
             error_log("BLOCK_BDC: Error obteniendo matrix login token (HTTP $status): $response");
         }
         return null;
+    }
+
+    /**
+     * Fija o cambia el usuario Git del alumno. La API revoca el anterior y da acceso al nuevo
+     * en todos sus repositorios.
+     *
+     * @param int $userid ID de usuario en Moodle.
+     * @param string $git_username Nuevo usuario de GitHub.
+     * @return array Respuesta de la API: git_username, repos_updated, errors.
+     * @throws moodle_exception Si la API rechaza la petición o no está disponible.
+     */
+    public function set_git_username($userid, $git_username) {
+        $curl = new \curl(['ignoresecurity' => true]);
+        $curl->setHeader('Authorization: Bearer ' . $this->token);
+        $curl->setHeader('Content-Type: application/json');
+
+        $url = $this->baseurl . '/v1/usuarios/' . (int)$userid . '/git-username';
+        $response = $curl->post($url, json_encode(['git_username' => $git_username]), ['CURLOPT_CUSTOMREQUEST' => 'PUT']);
+        return $this->parse_git_username_response($curl, $response);
+    }
+
+    /**
+     * Elimina el usuario Git del alumno y revoca su acceso a sus repositorios.
+     *
+     * @param int $userid ID de usuario en Moodle.
+     * @return array Respuesta de la API: git_username, repos_updated, errors.
+     * @throws moodle_exception Si la API rechaza la petición o no está disponible.
+     */
+    public function delete_git_username($userid) {
+        $curl = new \curl(['ignoresecurity' => true]);
+        $curl->setHeader('Authorization: Bearer ' . $this->token);
+        $curl->setHeader('Content-Type: application/json');
+
+        $url = $this->baseurl . '/v1/usuarios/' . (int)$userid . '/git-username';
+        $response = $curl->post($url, '', ['CURLOPT_CUSTOMREQUEST' => 'DELETE']);
+        return $this->parse_git_username_response($curl, $response);
+    }
+
+    /**
+     * Interpreta la respuesta de los endpoints de git-username.
+     *
+     * @param \curl $curl Cliente usado en la petición.
+     * @param string|bool $response Cuerpo de la respuesta.
+     * @return array
+     * @throws moodle_exception
+     */
+    private function parse_git_username_response($curl, $response) {
+        $status = (int)($curl->get_info()['http_code'] ?? 0);
+        if ($status === 200) {
+            $data = json_decode($response, true);
+            return is_array($data) ? $data : [];
+        }
+        if ($status === 404) {
+            throw new \moodle_exception('error_github_not_found', 'block_bdc');
+        }
+        if ($status === 422) {
+            throw new \moodle_exception('error_github_invalid', 'block_bdc');
+        }
+        error_log("BLOCK_BDC: Error sincronizando git_username (HTTP $status): $response");
+        throw new \moodle_exception('error_github_sync', 'block_bdc', '', $status);
     }
 }

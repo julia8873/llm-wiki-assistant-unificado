@@ -26,3 +26,9 @@ class SelfHostedProvider(GitProviderClient):
 
     async def añadir_colaborador(self, repo_url_or_name: str, username: str, permission: str = "maintain") -> None:
         raise NotImplementedError("SelfHostedProvider pendiente de definición tecnológica (OSL).")
+
+    async def eliminar_colaborador(self, repo_url_or_name: str, username: str) -> None:
+        raise NotImplementedError("SelfHostedProvider pendiente de definición tecnológica (OSL).")
+
+    async def usuario_existe(self, username: str) -> bool:
+        raise NotImplementedError("SelfHostedProvider pendiente de definición tecnológica (OSL).")

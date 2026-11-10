@@ -73,3 +73,20 @@ class GitProviderClient(ABC):
         @param permission Permisos a otorgar (por defecto "maintain").
         """
         pass
+
+    async def eliminar_colaborador(self, repo_url_or_name: str, username: str) -> None:
+        """!
+        @brief Revoca el acceso de un colaborador (y cancela su invitación si sigue pendiente).
+        @details No es abstracto para no romper proveedores que aún no lo implementen.
+        @param repo_url_or_name URL o identificador del repositorio.
+        @param username Nombre de usuario a revocar.
+        """
+        raise NotImplementedError("Este proveedor no implementa eliminar_colaborador.")
+
+    async def usuario_existe(self, username: str) -> bool:
+        """!
+        @brief Comprueba si un usuario existe en el proveedor Git.
+        @param username Nombre de usuario a comprobar.
+        @return True si existe, False en caso contrario.
+        """
+        raise NotImplementedError("Este proveedor no implementa usuario_existe.")

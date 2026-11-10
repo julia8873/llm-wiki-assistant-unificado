@@ -6,6 +6,7 @@ almacenando el estado en PostgreSQL.
 """
 
 import os
+import logging
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, status, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -22,7 +23,7 @@ from fastapi import Request
 import redis
 from rq import Queue, Retry
 
-from .models import MapeoCreate, MapeoRead, MapeoEstado, CursoCreate, EventoCreate, EventoRead, MatrixTokenRequest, MatrixTokenResponse
+from .models import MapeoCreate, MapeoRead, MapeoEstado, CursoCreate, EventoCreate, EventoRead, MatrixTokenRequest, MatrixTokenResponse, GitUsernameUpdate, GitUsernameSyncResponse
 from .db import get_session, MapeoDB, EventosBotDB
 from .services.git import get_git_provider, GitProviderConfigError
 from .core.config import settings
@@ -38,6 +39,19 @@ class SunsetMiddleware(BaseHTTPMiddleware):
         if route and getattr(route, "deprecated", False):
             response.headers["Sunset"] = "Wed, 01 Jan 2027 00:00:00 GMT"
         return response
+
+# Permiso otorgado al alumno sobre su propio repositorio ("push" = escritura, mínimo privilegio).
+STUDENT_REPO_PERMISSION = "push"
+
+# Formato permitido para usernames de Git (GitHub/GitLab). Excluye "/" y otros caracteres peligrosos para rutas de API.
+GIT_USERNAME_RE = re.compile(r'^[A-Za-z0-9](?:[A-Za-z0-9._-]{0,253}[A-Za-z0-9])?$')
+
+def normalize_git_username(value: Optional[str]) -> Optional[str]:
+    """Limpia un username de Git ('@usuario' -> 'usuario'). Devuelve None si está vacío o no es válido."""
+    if not value:
+        return None
+    value = value.strip().lstrip('@')
+    return value if GIT_USERNAME_RE.match(value) else None
 
 def sanitize_repo_name(name: str) -> str:
     """Elimina tildes y caracteres especiales para nombres de repositorio Git."""
@@ -126,7 +140,8 @@ async def create_mapeo(response: Response, request: Request, mapeo: MapeoCreate,
         estado=MapeoEstado.PENDIENTE_GIT,
         is_teacher=1 if mapeo.is_teacher else 0,
         moodle_username=mapeo.moodle_username,
-        moodle_course_name=mapeo.moodle_course_fullname or mapeo.moodle_course_shortname
+        moodle_course_name=mapeo.moodle_course_fullname or mapeo.moodle_course_shortname,
+        git_username=normalize_git_username(mapeo.git_username)
     )
     
     try:
@@ -169,6 +184,20 @@ async def create_mapeo(response: Response, request: Request, mapeo: MapeoCreate,
                 repo_url = f"https://{provider_domain}/{org}/{repo_oficial_url}.git"
             else:
                 repo_url = await provider.generar_repo_alumno(nombre_repo, repo_oficial_url)
+                # Añadimos al alumno como colaborador de su repositorio. Es "best effort":
+                # si falla (usuario inexistente en el proveedor, permisos, etc.) se registra
+                # el aviso pero NO se interrumpe el aprovisionamiento.
+                # Solo se usa el usuario Git declarado explícitamente por el alumno (nunca el de Moodle,
+                # para no dar acceso a una cuenta ajena que casualmente tenga el mismo nombre).
+                git_user = db_mapeo.git_username
+                if git_user:
+                    try:
+                        await provider.añadir_colaborador(repo_url, git_user, STUDENT_REPO_PERMISSION)
+                    except Exception as collab_err:
+                        logging.getLogger(__name__).warning(
+                            "No se pudo añadir a '%s' como colaborador de %s: %s",
+                            git_user, nombre_repo, collab_err
+                        )
             
             # Actualizamos BD
             db_mapeo.repo_url = repo_url
@@ -261,6 +290,74 @@ def get_by_room(response: Response, request: Request, matrix_room_id: str, sessi
     if not result:
         raise HTTPException(status_code=404, detail="Mapeo no encontrado para esta sala")
     return result
+
+def _student_mapeos_with_repo(session: Session, moodle_user_id: int):
+    """Mapeos de alumno (no profesor) de un usuario que ya tienen repositorio aprovisionado."""
+    return session.query(MapeoDB).filter(
+        MapeoDB.moodle_user_id == moodle_user_id,
+        MapeoDB.is_teacher == 0,
+        MapeoDB.repo_url.isnot(None)
+    ).all()
+
+
+@app.put("/v1/usuarios/{moodle_user_id}/git-username", response_model=GitUsernameSyncResponse)
+async def set_git_username(moodle_user_id: int, payload: GitUsernameUpdate, session: Session = Depends(get_session), token: str = Depends(verify_token)):
+    """Fija o cambia el usuario Git de un alumno: revoca el anterior y da acceso al nuevo en todos sus repositorios."""
+    new_user = normalize_git_username(payload.git_username)
+    if not new_user:
+        raise HTTPException(status_code=422, detail="Nombre de usuario de Git no válido")
+
+    try:
+        provider = get_git_provider()
+        exists = await provider.usuario_existe(new_user)
+    except Exception as e:
+        logging.getLogger(__name__).error("No se pudo comprobar el usuario Git", exc_info=True)
+        raise HTTPException(status_code=502, detail=f"Fallo al comunicar con el proveedor Git: {str(e)}")
+    if not exists:
+        raise HTTPException(status_code=404, detail=f"El usuario '{new_user}' no existe en el proveedor Git")
+
+    updated = 0
+    errors: List[str] = []
+    for m in _student_mapeos_with_repo(session, moodle_user_id):
+        try:
+            old_user = m.git_username
+            if old_user and old_user.lower() != new_user.lower():
+                await provider.eliminar_colaborador(m.repo_url, old_user)
+                m.git_username = None
+            await provider.añadir_colaborador(m.repo_url, new_user, STUDENT_REPO_PERMISSION)
+            m.git_username = new_user
+            updated += 1
+        except Exception as e:
+            logging.getLogger(__name__).warning("Fallo sincronizando git_username en %s: %s", m.repo_url, e)
+            errors.append(f"{m.repo_url}: {str(e)}")
+    session.commit()
+
+    return GitUsernameSyncResponse(git_username=new_user, repos_updated=updated, errors=errors)
+
+
+@app.delete("/v1/usuarios/{moodle_user_id}/git-username", response_model=GitUsernameSyncResponse)
+async def delete_git_username(moodle_user_id: int, session: Session = Depends(get_session), token: str = Depends(verify_token)):
+    """Elimina el usuario Git de un alumno: revoca su acceso en todos sus repositorios."""
+    mapeos = [m for m in _student_mapeos_with_repo(session, moodle_user_id) if m.git_username]
+    updated = 0
+    errors: List[str] = []
+    if mapeos:
+        try:
+            provider = get_git_provider()
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"Fallo al comunicar con el proveedor Git: {str(e)}")
+        for m in mapeos:
+            try:
+                await provider.eliminar_colaborador(m.repo_url, m.git_username)
+                m.git_username = None
+                updated += 1
+            except Exception as e:
+                logging.getLogger(__name__).warning("Fallo revocando git_username en %s: %s", m.repo_url, e)
+                errors.append(f"{m.repo_url}: {str(e)}")
+        session.commit()
+
+    return GitUsernameSyncResponse(git_username=None, repos_updated=updated, errors=errors)
+
 
 @app.post("/v1/cursos", status_code=status.HTTP_201_CREATED)
 @app.post("/cursos", status_code=status.HTTP_201_CREATED, deprecated=True)
