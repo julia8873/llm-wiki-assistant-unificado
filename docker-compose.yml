@@ -389,6 +389,8 @@ services:
       - PORT=${FRONTEND_PUERTO_CONTENEDOR}
       - VITE_ALLOWED_HOSTS=${DOMAIN}
       - VITE_HMR_PORT=${VITE_HMR_PORT:-}
+      - ENVIRONMENT=${ENVIRONMENT}
+      - VITE_DISABLE_HMR=${VITE_DISABLE_HMR:-}
 
 volumes:
   mariadb_data:

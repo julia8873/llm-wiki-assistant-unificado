@@ -30,7 +30,7 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
 
   const response = await fetch(url, config);
 
-  if (response.status === 401 && !url.includes('/v1/token') && !url.includes('/v1/refresh')) {
+  if (response.status === 401 && !url.includes('/token') && !url.includes('/refresh')) {
     window.dispatchEvent(new CustomEvent('auth-unauthorized'));
   }
 

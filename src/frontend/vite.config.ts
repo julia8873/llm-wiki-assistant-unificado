@@ -20,8 +20,13 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       host: true,
       allowedHosts: env.VITE_ALLOWED_HOSTS ? env.VITE_ALLOWED_HOSTS.split(',') : [],
-      // Útil cuando se usa un proxy inverso (ej: Ngrok, Traefik, Nginx)
-      ...(env.VITE_HMR_PORT && { hmr: { clientPort: parseInt(env.VITE_HMR_PORT) } }),
+      // Desactivar HMR en entorno de producción o con VITE_DISABLE_HMR para evitar bucles infinitos de recarga
+      hmr: (env.ENVIRONMENT === 'production' || env.VITE_DISABLE_HMR === 'true' || env.NODE_ENV === 'production')
+        ? false
+        : (env.VITE_HMR_PORT ? { clientPort: parseInt(env.VITE_HMR_PORT) } : undefined),
+      watch: {
+        ignored: ['**/node_modules/**', '**/.git/**']
+      },
       proxy: {
         [apiBaseUrl]: {
           // La URL se inyecta desde docker-compose.yml (o .env)

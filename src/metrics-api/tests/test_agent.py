@@ -2,7 +2,7 @@ import pytest
 import os
 import time
 from fastapi.testclient import TestClient
-from metrics_api.main import metrics_api
+from metrics_api.main import app
 from metrics_api.schemas import AgentSummaryResponse
 from metrics_api.agent import _SUMMARY_CACHE, load_shared_config
 import json

@@ -4,7 +4,7 @@ from datetime import datetime
 import sys
 sys.path.append("/app")
 from metrics_api.main import _trigger_reconciliation_for_student
-from metrics_api.database import SessionLocal
+# SessionLocal is defined below via sessionmaker
 from metrics_api.models import DiscrepanciaAuditoria, EventoSync, Interaccion
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker

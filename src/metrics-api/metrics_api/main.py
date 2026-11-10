@@ -98,6 +98,7 @@ app = FastAPI(
     redoc_url="/redoc" if settings.environment in ["dev", "local"] else None,
     openapi_url="/openapi.json" if settings.environment in ["dev", "local"] else None
 )
+metrics_api = app
 app.add_middleware(SunsetMiddleware)
 
 from fastapi.responses import JSONResponse
@@ -367,7 +368,7 @@ async def get_course_discrepancias(
 
 @app.post("/v1/token")
 @app.post("/token", deprecated=True)
-def login(request: LoginRequest, response: Response, session: Session = Depends(get_session)):
+def login(request: LoginRequest, response: Response, raw_request: Request, session: Session = Depends(get_session)):
 
     moodle_url = settings.moodle_auth_url
     mapeo_url = settings.mapeo_api_url
@@ -472,12 +473,13 @@ def login(request: LoginRequest, response: Response, session: Session = Depends(
     session.add(db_rt)
     session.commit()
     
+    is_secure = (raw_request.url.scheme == "https" or raw_request.headers.get("x-forwarded-proto") == "https") and settings.environment == "production"
     response.set_cookie(
         key="refresh_token",
         value=raw_refresh_token,
         httponly=True,
-        secure=True,
-        samesite="strict",
+        secure=is_secure,
+        samesite="lax",
         max_age=7 * 24 * 60 * 60, # 7 days
     )
     
@@ -526,11 +528,8 @@ def refresh(request: Request, response: Response, session: Session = Depends(get
     except:
         raise HTTPException(status_code=503, detail="Error de backend")
         
-    if not mapeos:
-        raise HTTPException(status_code=403, detail="El usuario no tiene cursos asignados")
-            
-    allowed_courses = [m["moodle_course_id"] for m in mapeos]
-    is_teacher = any(m.get("is_teacher") for m in mapeos)
+    allowed_courses = [m["moodle_course_id"] for m in mapeos] if mapeos else []
+    is_teacher = any(m.get("is_teacher") for m in mapeos) if mapeos else False
     moodle_username = mapeos[0].get("moodle_username") if mapeos else "unknown"
 
     payload = {
@@ -555,12 +554,13 @@ def refresh(request: Request, response: Response, session: Session = Depends(get
     session.add(new_db_token)
     session.commit()
     
+    is_secure = (request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https") and settings.environment == "production"
     response.set_cookie(
         key="refresh_token",
         value=new_raw_token,
         httponly=True,
-        secure=True,
-        samesite="strict",
+        secure=is_secure,
+        samesite="lax",
         max_age=7 * 24 * 60 * 60,
     )
     

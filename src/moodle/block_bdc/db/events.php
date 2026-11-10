@@ -14,4 +14,12 @@ $observers = array(
         'eventname'   => '\\core\\event\\course_created',
         'callback'    => 'block_bdc\\observer::course_created',
     ),
+    array(
+        'eventname'   => '\\core\\event\\user_enrolment_created',
+        'callback'    => 'block_bdc\\observer::user_enrolment_created',
+    ),
+    array(
+        'eventname'   => '\\core\\event\\role_assigned',
+        'callback'    => 'block_bdc\\observer::role_assigned',
+    ),
 );

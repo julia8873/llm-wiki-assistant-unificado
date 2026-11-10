@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 
-from metrics_api.main import metrics_api
+from metrics_api.main import app
 from metrics_api.db import get_session
 from metrics_api.models import Base
 

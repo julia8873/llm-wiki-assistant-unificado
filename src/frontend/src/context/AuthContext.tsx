@@ -70,26 +70,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const expTime = user.exp * 1000;
       const timeToExpire = expTime - Date.now();
 
-      if (timeToExpire <= 0) {
-        logout();
-      } else {
-        const timer = setTimeout(async () => {
-          try {
-            const response = await fetch(`${API_URL}/refresh`, { method: 'POST', credentials: 'include' });
-            if (response.ok) {
-              const data = await response.json();
-              setApiToken(data.access_token);
-              setToken(data.access_token);
-              setUser(jwtDecode<UserToken>(data.access_token));
-            } else {
-              logout();
-            }
-          } catch (e) {
+      // Si ha expirado según el reloj local o está cerca, refrescar de forma segura sin bucle de 0ms
+      const delay = Math.max(15000, timeToExpire - 60000);
+
+      const timer = setTimeout(async () => {
+        try {
+          const response = await fetch(`${API_URL}/refresh`, { method: 'POST', credentials: 'include' });
+          if (response.ok) {
+            const data = await response.json();
+            setApiToken(data.access_token);
+            setToken(data.access_token);
+            setUser(jwtDecode<UserToken>(data.access_token));
+          } else {
             logout();
           }
-        }, Math.max(0, timeToExpire - 5000)); // Refrescar 5 segundos antes de que caduque
-        return () => clearTimeout(timer);
-      }
+        } catch (e) {
+          logout();
+        }
+      }, delay);
+      return () => clearTimeout(timer);
     }
   }, [user]);
 
