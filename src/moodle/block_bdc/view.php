@@ -130,8 +130,9 @@ if ($lock) {
         
         // Guardar mapeo en la BD central
         try {
-            // Usuario de GitHub indicado por el alumno (opcional) para añadirlo como colaborador de su repo.
-            $git_username = $is_teacher ? '' : (string)get_user_preferences('block_bdc_github_username', '');
+            // Usuario de GitHub indicado por el usuario (opcional) para añadirlo como colaborador:
+            // el alumno en su repositorio y el profesor en el repositorio oficial de la asignatura.
+            $git_username = (string)get_user_preferences('block_bdc_github_username', '');
             $mapeo_client->create_mapeo($userid, $courseid, $github_url, $room_id, $USER->username, $course->shortname, $is_teacher, $course->fullname, $git_username);
         } catch (\moodle_exception $e) {
             // Fallback (Capa 2 de idempotencia): Si el API devuelve 409 Conflict a pesar del lock

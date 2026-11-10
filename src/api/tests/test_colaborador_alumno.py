@@ -14,6 +14,7 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 CFG = {"git": {"proveedor_activo": "github",
                "github": {"organizacion": "org", "api_base_url": "https://api.github.com"}}}
 REPO = "https://github.com/org/Math101-alice.git"
+OFICIAL = "https://github.com/org/Math101-Oficial.git"
 HEADERS = {"Authorization": "Bearer test_token"}
 
 
@@ -96,11 +97,44 @@ def test_git_username_invalido_se_ignora_sin_romper(client):
     prov.añadir_colaborador.assert_not_awaited()
 
 
-def test_profesor_no_se_anade_como_colaborador(client):
+def test_profesor_con_git_username_se_anade_al_repo_oficial(client):
+    """El profesor es colaborador (push) del repositorio OFICIAL, no de un repo propio."""
     prov = _provider()
-    r = _crear(client, prov, _payload(is_teacher=True, git_username="alice-gh"))
+    r = _crear(client, prov, _payload(is_teacher=True, git_username="prof-gh"))
+    assert r.status_code == 201
+    prov.generar_repo_alumno.assert_not_awaited()
+    prov.añadir_colaborador.assert_awaited_once_with(OFICIAL, "prof-gh", "push")
+    assert r.json()["git_username"] == "prof-gh"
+    assert r.json()["repo_url"] == OFICIAL
+
+
+def test_profesor_sin_git_username_no_se_anade_como_colaborador(client):
+    prov = _provider()
+    r = _crear(client, prov, _payload(is_teacher=True))
     assert r.status_code == 201
     prov.añadir_colaborador.assert_not_awaited()
+    assert r.json()["git_username"] is None
+
+
+def test_profesor_arroba_inicial_se_normaliza(client):
+    prov = _provider()
+    _crear(client, prov, _payload(is_teacher=True, git_username=" @prof-gh "))
+    prov.añadir_colaborador.assert_awaited_once_with(OFICIAL, "prof-gh", "push")
+
+
+def test_profesor_git_username_invalido_se_ignora_sin_romper(client):
+    prov = _provider()
+    r = _crear(client, prov, _payload(is_teacher=True, git_username="../../etc"))
+    assert r.status_code == 201
+    prov.añadir_colaborador.assert_not_awaited()
+
+
+def test_fallo_al_anadir_profesor_no_rompe_el_aprovisionamiento(client):
+    prov = _provider(collab_side_effect=Exception("404 repo oficial no existe"))
+    r = _crear(client, prov, _payload(is_teacher=True, git_username="prof-gh"))
+    assert r.status_code == 201
+    assert r.json()["estado"] == "ACTIVO"
+    assert r.json()["repo_url"] == OFICIAL
 
 
 def test_fallo_al_anadir_colaborador_no_rompe_el_aprovisionamiento(client):
@@ -113,9 +147,9 @@ def test_fallo_al_anadir_colaborador_no_rompe_el_aprovisionamiento(client):
 
 # ---------- Fase 2: editar / borrar ----------
 
-def _mapeo_con_repo(client, git_username="old-user", user_id=1, course_id=1, is_teacher=0):
+def _mapeo_con_repo(client, git_username="old-user", user_id=1, course_id=1, is_teacher=0, repo_url=REPO):
     s = TestingSessionLocal()
-    s.add(MapeoDB(moodle_user_id=user_id, moodle_course_id=course_id, repo_url=REPO,
+    s.add(MapeoDB(moodle_user_id=user_id, moodle_course_id=course_id, repo_url=repo_url,
                   matrix_room_id=f"!r{course_id}:x", estado="ACTIVO",
                   is_teacher=is_teacher, git_username=git_username))
     s.commit()
@@ -181,10 +215,47 @@ def test_put_sin_mapeos_devuelve_ok_con_cero_repos(client):
     assert r.json()["repos_updated"] == 0
 
 
-def test_put_no_toca_mapeos_de_profesor(client):
-    _mapeo_con_repo(client, None, is_teacher=1)
+def test_put_profesor_se_anade_al_repo_oficial_con_push(client):
+    _mapeo_con_repo(client, None, is_teacher=1, repo_url=OFICIAL)
     prov = _provider()
-    r = _llamar(client, prov, "PUT", "/v1/usuarios/1/git-username", json={"git_username": "new-user"})
+    r = _llamar(client, prov, "PUT", "/v1/usuarios/1/git-username", json={"git_username": "prof-gh"})
+    assert r.status_code == 200
+    assert r.json() == {"git_username": "prof-gh", "repos_updated": 1, "errors": []}
+    prov.eliminar_colaborador.assert_not_awaited()
+    prov.añadir_colaborador.assert_awaited_once_with(OFICIAL, "prof-gh", "push")
+    assert _git_username_en_bd() == "prof-gh"
+
+
+def test_put_profesor_cambia_usuario_y_revoca_el_anterior_del_repo_oficial(client):
+    _mapeo_con_repo(client, "prof-old", is_teacher=1, repo_url=OFICIAL)
+    prov = _provider()
+    r = _llamar(client, prov, "PUT", "/v1/usuarios/1/git-username", json={"git_username": "prof-new"})
+    assert r.status_code == 200
+    prov.eliminar_colaborador.assert_awaited_once_with(OFICIAL, "prof-old")
+    prov.añadir_colaborador.assert_awaited_once_with(OFICIAL, "prof-new", "push")
+    assert _git_username_en_bd() == "prof-new"
+
+
+def test_put_usuario_alumno_y_profesor_usa_el_permiso_de_cada_rol(client):
+    """Cada mapeo usa el permiso de su rol (se fuerza un permiso de profesor distinto para comprobarlo)."""
+    _mapeo_con_repo(client, None, course_id=1, is_teacher=0, repo_url=REPO)
+    _mapeo_con_repo(client, None, course_id=2, is_teacher=1, repo_url=OFICIAL)
+    prov = _provider()
+    with patch("app.main.TEACHER_REPO_PERMISSION", "maintain"):
+        r = _llamar(client, prov, "PUT", "/v1/usuarios/1/git-username", json={"git_username": "me-gh"})
+    assert r.status_code == 200
+    assert r.json()["repos_updated"] == 2
+    llamadas = {c.args for c in prov.añadir_colaborador.await_args_list}
+    assert llamadas == {(REPO, "me-gh", "push"), (OFICIAL, "me-gh", "maintain")}
+
+
+def test_put_profesor_sin_repo_aprovisionado_no_se_toca(client):
+    s = TestingSessionLocal()
+    s.add(MapeoDB(moodle_user_id=1, moodle_course_id=1, repo_url=None, estado="PENDIENTE_GIT", is_teacher=1))
+    s.commit()
+    s.close()
+    prov = _provider()
+    r = _llamar(client, prov, "PUT", "/v1/usuarios/1/git-username", json={"git_username": "prof-gh"})
     assert r.status_code == 200
     assert r.json()["repos_updated"] == 0
     prov.añadir_colaborador.assert_not_awaited()
@@ -207,6 +278,16 @@ def test_delete_revoca_y_limpia(client):
     assert r.status_code == 200
     assert r.json() == {"git_username": None, "repos_updated": 1, "errors": []}
     prov.eliminar_colaborador.assert_awaited_once_with(REPO, "old-user")
+    assert _git_username_en_bd() is None
+
+
+def test_delete_profesor_revoca_acceso_al_repo_oficial(client):
+    _mapeo_con_repo(client, "prof-gh", is_teacher=1, repo_url=OFICIAL)
+    prov = _provider()
+    r = _llamar(client, prov, "DELETE", "/v1/usuarios/1/git-username")
+    assert r.status_code == 200
+    assert r.json() == {"git_username": None, "repos_updated": 1, "errors": []}
+    prov.eliminar_colaborador.assert_awaited_once_with(OFICIAL, "prof-gh")
     assert _git_username_en_bd() is None
 
 

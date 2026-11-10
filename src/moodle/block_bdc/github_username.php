@@ -1,9 +1,10 @@
 <?php
 /**
- * Página para que el alumno indique, cambie o elimine su usuario de GitHub.
+ * Página para que el alumno o el profesor indique, cambie o elimine su usuario de GitHub.
  *
  * El usuario se guarda como preferencia de Moodle (disponible antes de crear el repositorio)
- * y se sincroniza con mapeo-api, que añade/revoca el acceso en los repositorios del alumno.
+ * y se sincroniza con mapeo-api, que añade/revoca el acceso en los repositorios del usuario:
+ * su repositorio (alumno) o el repositorio oficial de la asignatura (profesor).
  *
  * @package   block_bdc
  * @copyright 2026 LLM Wiki Assistant
@@ -29,6 +30,11 @@ if (isguestuser()) {
 }
 $context = context_course::instance($course->id);
 
+// Mismo criterio que view.php y block_bdc.php para distinguir profesores de alumnos.
+$is_teacher = has_capability('moodle/course:update', $context)
+    || has_capability('moodle/course:viewhiddenactivities', $context)
+    || has_capability('moodle/grade:edit', $context);
+
 $pageurl = new moodle_url('/blocks/bdc/github_username.php', ['courseid' => $courseid]);
 $returnurl = ($courseid == SITEID) ? new moodle_url('/') : new moodle_url('/course/view.php', ['id' => $courseid]);
 
@@ -48,7 +54,7 @@ if ($action === 'delete') {
         echo $OUTPUT->header();
         echo $OUTPUT->heading(get_string('github_title', 'block_bdc'));
         echo $OUTPUT->confirm(
-            get_string('github_delete_confirm', 'block_bdc'),
+            get_string($is_teacher ? 'github_delete_confirm_teacher' : 'github_delete_confirm', 'block_bdc'),
             new moodle_url($pageurl, ['action' => 'delete', 'confirm' => 1]),
             $pageurl
         );
@@ -88,7 +94,7 @@ if ($mform->is_cancelled()) {
         } else {
             $result = $client->set_git_username($USER->id, $newuser);
             set_user_preference($pref, $newuser);
-            $okmsg = get_string('github_saved', 'block_bdc');
+            $okmsg = get_string($is_teacher ? 'github_saved_teacher' : 'github_saved', 'block_bdc');
         }
         if (!empty($result['errors'])) {
             redirect($returnurl, get_string('github_partial', 'block_bdc', count($result['errors'])), null, \core\output\notification::NOTIFY_WARNING);
@@ -102,7 +108,7 @@ if ($mform->is_cancelled()) {
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('github_title', 'block_bdc'));
-echo html_writer::tag('p', get_string('github_intro', 'block_bdc'));
+echo html_writer::tag('p', get_string($is_teacher ? 'github_intro_teacher' : 'github_intro', 'block_bdc'));
 $mform->display();
 if ($current !== '') {
     echo $OUTPUT->single_button(

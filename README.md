@@ -129,14 +129,20 @@ Hay dos formas de proporcionar apuntes al bot para que extraiga sus conceptos us
 
 ---
 
-## Usuario de GitHub del alumno (colaborador de su repositorio)
+## Usuario de GitHub (colaborador de su repositorio / del repositorio oficial)
 
-Cada alumno puede indicar su usuario de GitHub desde el bloque de Moodle (enlace **«Indicar usuario de GitHub»** bajo el botón de acceso). Se puede cambiar o eliminar en cualquier momento:
+Alumnos y profesores pueden indicar su usuario de GitHub desde el bloque de Moodle (enlace **«Indicar usuario de GitHub»** bajo el botón de acceso). Se puede cambiar o eliminar en cualquier momento:
 
-- Si el alumno lo indica **antes** de crear su sala, se le añade como colaborador (permiso `push`) al crear su repositorio.
-- Si lo indica, cambia o elimina **después**, la API revoca el acceso anterior (y cancela la invitación pendiente, si la hay) y da acceso al nuevo usuario en todos sus repositorios.
+| Rol | Repositorio al que se le añade como colaborador | Permiso |
+|---|---|---|
+| Alumno | Su propio repositorio de la asignatura | `push` |
+| Profesor | Repositorio **oficial** de la asignatura (`<asignatura>-Oficial`) | `push` |
+
+- Si lo indica **antes** de crear su sala, se le añade como colaborador al crear su mapeo (repositorio propio en el caso del alumno, repositorio oficial en el caso del profesor).
+- Si lo indica, cambia o elimina **después**, la API revoca el acceso anterior (y cancela la invitación pendiente, si la hay) y da acceso al nuevo usuario en todos sus repositorios, con el permiso que corresponde a su rol en cada asignatura.
 - Si no lo indica, el repositorio se crea igualmente, sin colaborador. El nombre de usuario de Moodle **no** se usa como usuario de GitHub.
-- GitHub envía una invitación que el alumno debe aceptar.
+- GitHub envía una invitación que el usuario debe aceptar.
+- El permiso de profesor se define en `TEACHER_REPO_PERMISSION` (`src/api/app/main.py`). Es `push` porque `maintain` solo existe en organizaciones de GitHub y falla (HTTP 422) en cuentas personales; si usas una organización puedes cambiarlo a `maintain`.
 
 Endpoints de `mapeo-api` (requieren el token de la API): `PUT /v1/usuarios/{moodle_user_id}/git-username` y `DELETE /v1/usuarios/{moodle_user_id}/git-username`.
 

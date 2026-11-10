@@ -3,7 +3,7 @@
 
 1. Crea el repositorio privado para la asignatura clonando el repositorio plantilla.
 2. Marca el repositorio resultante como "template".
-3. Añade a los profesores proporcionados como colaboradores con permisos "maintain".
+3. Añade a los profesores proporcionados como colaboradores con permisos "push" (escritura).
 
 Se ejecuta desde la terminal con el comando: 
 python configurar_bdc_core.py <Asignatura> <Profesor1,Profesor2>
@@ -50,15 +50,16 @@ async def amain():
         print(f"Marcando {repo_url} como template...")
         await provider.marcar_como_template(repo_url)
         
-        # 4. Añadir profesores como colaboradores (con permiso maintain)
+        # 4. Añadir profesores como colaboradores (permiso push: válido en cuentas personales y organizaciones;
+        #    "maintain" solo existe en organizaciones y da 422 en cuentas personales de GitHub)
         for profe in profesores:
             profe = profe.strip()
             if not profe:
                 continue
             
-            print(f"Añadiendo a {profe} con permisos de maintain...")
+            print(f"Añadiendo a {profe} con permisos de push...")
             try:
-                await provider.añadir_colaborador(repo_url, profe, "maintain")
+                await provider.añadir_colaborador(repo_url, profe, "push")
             except Exception as e:
                 print(f"  -> Error al añadir a {profe}: {e}")
                 

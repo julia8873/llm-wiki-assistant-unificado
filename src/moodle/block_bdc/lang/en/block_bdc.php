@@ -17,9 +17,10 @@ $string['btn_access'] = 'Acceder a mi sala con el Asistente IA';
 $string['creating_room'] = 'Creando sala... por favor espera.';
 $string['error_mapping'] = 'Ocurrió un error al vincular la sala. Contacta con soporte.';
 
-// Usuario de GitHub del alumno.
+// Usuario de GitHub del alumno y del profesor.
 $string['github_title'] = 'Mi usuario de GitHub';
 $string['github_intro'] = 'Indica tu usuario de GitHub para que se te añada como colaborador de tu repositorio de la asignatura. Recibirás una invitación de GitHub que deberás aceptar. Si lo dejas vacío y guardas, se revocará tu acceso.';
+$string['github_intro_teacher'] = 'Indica tu usuario de GitHub para que se te añada como colaborador del repositorio oficial de la asignatura. Recibirás una invitación de GitHub que deberás aceptar. Si lo dejas vacío y guardas, se revocará tu acceso.';
 $string['github_field'] = 'Usuario de GitHub';
 $string['github_field_desc'] = 'Solo el nombre de usuario, por ejemplo: octocat (sin URL).';
 $string['github_current'] = 'Usuario de GitHub: {$a}';
@@ -28,6 +29,8 @@ $string['github_set'] = 'Indicar usuario de GitHub';
 $string['github_edit'] = 'Cambiar o eliminar';
 $string['github_delete'] = 'Eliminar mi usuario de GitHub';
 $string['github_delete_confirm'] = 'Se revocará tu acceso como colaborador a tus repositorios. ¿Continuar?';
+$string['github_delete_confirm_teacher'] = 'Se revocará tu acceso como colaborador al repositorio oficial de la asignatura. ¿Continuar?';
+$string['github_saved_teacher'] = 'Usuario de GitHub guardado. Revisa tu correo o GitHub para aceptar la invitación al repositorio oficial de la asignatura.';
 $string['github_saved'] = 'Usuario de GitHub guardado. Revisa tu correo o GitHub para aceptar la invitación al repositorio.';
 $string['github_deleted'] = 'Usuario de GitHub eliminado y acceso revocado.';
 $string['github_partial'] = 'Cambio guardado, pero no se pudo actualizar el acceso en {$a} repositorio(s). Inténtalo de nuevo más tarde o contacta con soporte.';
@@ -37,8 +40,8 @@ $string['error_github_not_found'] = 'El usuario de GitHub indicado no existe.';
 $string['error_github_sync'] = 'No se pudo actualizar el usuario de GitHub (HTTP {$a}). Inténtalo de nuevo más tarde.';
 
 // Privacidad.
-$string['privacy:metadata:preference:github_username'] = 'El usuario de GitHub que el alumno ha indicado para ser añadido como colaborador de su repositorio.';
+$string['privacy:metadata:preference:github_username'] = 'El usuario de GitHub que el alumno o profesor ha indicado para ser añadido como colaborador de su repositorio (alumno) o del repositorio oficial de la asignatura (profesor).';
 $string['privacy:metadata:mapeo_api'] = 'Para aprovisionar los repositorios y salas se envían datos a la API de mapeo.';
 $string['privacy:metadata:mapeo_api:moodle_user_id'] = 'El ID del usuario en Moodle.';
 $string['privacy:metadata:mapeo_api:moodle_username'] = 'El nombre de usuario en Moodle, usado para nombrar el repositorio y la sala.';
-$string['privacy:metadata:mapeo_api:git_username'] = 'El usuario de GitHub indicado por el alumno, usado para darle acceso a su repositorio.';
+$string['privacy:metadata:mapeo_api:git_username'] = 'El usuario de GitHub indicado por el alumno o profesor, usado para darle acceso a su repositorio o al repositorio oficial de la asignatura.';

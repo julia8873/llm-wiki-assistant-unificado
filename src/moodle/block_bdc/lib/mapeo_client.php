@@ -78,7 +78,7 @@ class block_bdc_mapeo_client {
      * @param string $course_shortname Nombre corto del curso para usar como base del repositorio template.
      * @param bool $is_teacher Indica si el usuario es un profesor.
      * @param string $course_fullname Nombre completo del curso.
-     * @param string $git_username Usuario de GitHub del alumno (opcional) para añadirlo como colaborador.
+     * @param string $git_username Usuario de GitHub (opcional) para añadirlo como colaborador: el alumno en su repositorio y el profesor en el repositorio oficial.
      * @return array Resultado de la API devolviendo el mapeo generado.
      * @throws moodle_exception Si hay un error, como un 409 Conflict.
      */
@@ -146,8 +146,8 @@ class block_bdc_mapeo_client {
     }
 
     /**
-     * Fija o cambia el usuario Git del alumno. La API revoca el anterior y da acceso al nuevo
-     * en todos sus repositorios.
+     * Fija o cambia el usuario Git del alumno o profesor. La API revoca el anterior y da acceso al nuevo
+     * en todos sus repositorios (el propio del alumno o el repositorio oficial de la asignatura del profesor).
      *
      * @param int $userid ID de usuario en Moodle.
      * @param string $git_username Nuevo usuario de GitHub.
@@ -165,7 +165,7 @@ class block_bdc_mapeo_client {
     }
 
     /**
-     * Elimina el usuario Git del alumno y revoca su acceso a sus repositorios.
+     * Elimina el usuario Git del alumno o profesor y revoca su acceso a sus repositorios.
      *
      * @param int $userid ID de usuario en Moodle.
      * @return array Respuesta de la API: git_username, repos_updated, errors.
