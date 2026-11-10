@@ -556,6 +556,8 @@ EOF
               sleep 5
             done
           fi
+          info "Asegurando wwwroot dinamico en Moodle (MOODLE_URL)..."
+          docker exec "$moodle_container" php /opt/bitnami/scripts/moodle/fix_wwwroot.php 2>/dev/null || true
           info "Ejecutando upgrade de plugins de Moodle para registrar observadores de eventos..."
           docker exec -u daemon "$moodle_container" php /opt/bitnami/moodle/admin/cli/upgrade.php --non-interactive 2>/dev/null || true
           docker exec -u daemon "$moodle_container" php /opt/bitnami/moodle/admin/cli/purge_caches.php 2>/dev/null || true

@@ -35,3 +35,7 @@ RUN rm -f /opt/bitnami/php/bin/php \
 
 # 3. Creamos enlace simbólico para el plugin BDC
 RUN ln -s /moodle-custom-plugin /opt/bitnami/moodle/blocks/bdc
+
+# 4. Asegurar que Moodle wwwroot use dinámicamente MOODLE_URL en cada inicio (Issues #2 y #4)
+COPY fix_wwwroot.php /opt/bitnami/scripts/moodle/fix_wwwroot.php
+RUN echo 'php /opt/bitnami/scripts/moodle/fix_wwwroot.php || true' >> /opt/bitnami/scripts/moodle/setup.sh
